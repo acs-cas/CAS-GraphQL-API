@@ -1,0 +1,52 @@
+# Search reactions by TWO reaction participants identified by drawn
+# structure rather than RN -- one exact (AS_DRAWN), one by structural
+# neighborhood (SIMILARITY). Useful when a target reactant is a novel or
+# hypothetical substance with no CAS Registry Number of its own:
+# SIMILARITY still finds real indexed reactions built from a close
+# structural analog, giving you a synthesis route to model after.
+# Verified against the live API 2026-09-28. The SIMILARITY SMILES below
+# returns zero results from an exact substanceQuery structure search --
+# confirmed not a registered CAS substance.
+query StructureSimilarityReactantSearch($input: [ReactionInput]) {
+  reactionQuery(reactionInput: $input, pageParameters: { page: 1, pageSize: 5 }) {
+    pageInformation {
+      totalItems
+    }
+    reactions {
+      id
+      publicIdentifier
+      scheme
+      products {
+        yield
+        substance {
+          substance {
+            RN
+            preferredName
+          }
+        }
+      }
+      stages {
+        stage
+        reactants {
+          substance {
+            RN
+            preferredName
+          }
+        }
+      }
+    }
+  }
+}
+
+# Variables:
+# {
+#   "input": [
+#     {
+#       "reactionType": "FULL",
+#       "reactionParticipant": [
+#         { "structure": { "SMILES": "OB(O)C1=CSC=C1", "searchType": "AS_DRAWN" }, "role": "REACTANT" },
+#         { "structure": { "SMILES": "ClC(Cl)(Cl)C=1N=C(SC1)C=2N=C(Cl)C=C(N2)OC", "searchType": "SIMILARITY" }, "role": "REACTANT" }
+#       ]
+#     }
+#   ]
+# }

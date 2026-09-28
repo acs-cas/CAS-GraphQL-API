@@ -1,0 +1,18 @@
+# Narrow supplier listings for a substance to those in stock and at the
+# highest purity category. Verified against the live API 2026-09-02.
+query CatalogAvailabilityPurity($input: [CatalogInput]) {
+  catalogQuery(catalogInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    catalogItems {
+      name
+      supplierName
+      stockAvailability
+      purityCategory
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2", "availability": "MAINTAINED_IN_STOCK", "purityCategory": "EXTREMELY_HIGH" }] }

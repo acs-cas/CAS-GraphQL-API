@@ -1,0 +1,18 @@
+# Search concepts by controlled subject category.
+# Verified against the live API 2026-09-02.
+query ConceptBySubjectCategory($input: ConceptInput) {
+  conceptQuery(conceptInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    concept {
+      afk
+      preferredName
+      subjectCategory
+      isTopMember
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "subjectCategories": ["APPARATUS"] } }

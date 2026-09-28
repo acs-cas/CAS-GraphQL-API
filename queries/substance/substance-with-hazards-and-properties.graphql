@@ -1,0 +1,40 @@
+# Look up a substance and, in the same call, page through its hazard
+# designations and physical/chemical properties by traversing nested
+# fields on the returned Substance (this is different from filtering
+# substanceQuery itself with a second top-level input argument).
+# Verified against the live API 2026-09-28 (RN 58-08-2 = caffeine).
+query SubstanceWithHazardsAndProperties($inputs: [SubstanceInput]) {
+  substanceQuery(substanceInput: $inputs) {
+    substances {
+      RN
+      preferredName
+      molecularFormula
+      molecularWeight
+      substanceClasses
+      hazardDesignationPage(pageParameters: { page: 1, pageSize: 3 }) {
+        hazardDesignations {
+          signalWord
+          hazardAssignments {
+            code
+            statement
+          }
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+      propertyPage(pageParameters: { page: 1, pageSize: 3 }) {
+        properties {
+          name
+          value
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+  }
+}
+
+# Variables:
+# { "inputs": [{ "RN": "58-08-2" }] }

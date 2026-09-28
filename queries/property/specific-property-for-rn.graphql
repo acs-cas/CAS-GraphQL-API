@@ -1,0 +1,19 @@
+# Look up all reported values of one specific property for one substance.
+# Verified against the live API 2026-09-28.
+query PropertyForRN($input: PropertyInput) {
+  propertyQuery(propertyInput: $input, pageParameters: { page: 1, pageSize: 5 }) {
+    properties {
+      name
+      value
+      condition
+      isPredicted
+      isPreferredValue
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "RN": "58-08-2", "name": "MELTING_POINT" } }

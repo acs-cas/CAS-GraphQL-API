@@ -1,0 +1,22 @@
+# Combine the modified boolean flag with a specific modification
+# description filter. Verified against the live API 2026-09-02.
+query ModifiedPlusModType($input: [BiosequenceInput]) {
+  biosequenceQuery(biosequenceInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    biosequences {
+      RN
+      totalLength
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# {
+#   "input": [{
+#     "biosequenceSubstanceClass": "NUCLEIC_ACID_SEQUENCE",
+#     "modified": true,
+#     "modification": [{ "modificationDescription": "2'-fl" }]
+#   }]
+# }

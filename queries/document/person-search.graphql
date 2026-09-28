@@ -1,0 +1,19 @@
+# Search documents by author/inventor name. Verified against the live API
+# 2026-09-01.
+query PersonSearch($first: String = "", $last: String, $pageNumber: Int = 1, $pageSize: Int = 5) {
+  documentQuery(
+    documentInput: { person: { lastName: $last, firstName: $first } }
+    pageParameters: { page: $pageNumber, pageSize: $pageSize }
+  ) {
+    documents {
+      title
+      docType
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "first": "Susan", "last": "Olesik" }

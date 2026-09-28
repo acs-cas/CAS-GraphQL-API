@@ -1,0 +1,20 @@
+# Search documents by a publication date range plus an array of chemistry
+# keyword phrases. Verified against the live API 2026-09-28 -- also used to
+# confirm that multiple `keywords` entries are AND'd together, requiring all
+# listed phrases (see the note in document-query.md).
+query KeywordDateRangeSearch($input: [DocumentInput]) {
+  documentQuery(documentInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    documents {
+      title
+      docType
+      publicationDate
+      keywords
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "keywords": ["click chemistry", "triazole"], "publicationDate": { "low": "2015-01-01", "high": "2020-12-31" } }] }

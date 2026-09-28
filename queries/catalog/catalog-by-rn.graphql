@@ -1,0 +1,23 @@
+# Look up all supplier catalog listings for a substance, with pricing by
+# quantity. Verified against the live API 2026-09-02.
+query CatalogByRN($input: [CatalogInput]) {
+  catalogQuery(catalogInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    catalogItems {
+      name
+      supplierName
+      stockAvailability
+      shipsWithin
+      purity
+      offering {
+        quantity
+        price
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2" }] }

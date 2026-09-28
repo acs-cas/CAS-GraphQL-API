@@ -1,0 +1,76 @@
+# Look up full detail for a specific reaction by id: products, staged
+# reactants/reagents/solvents/catalysts, per-stage conditions, and both
+# procedure text AND structured procedure steps.
+# Verified against the live API 2026-09-02 -- this is the real literature
+# synthesis of aspirin from salicylic acid and acetic anhydride. Note:
+# procedure.procedure (free text) and procedure.procedureSteps (structured)
+# are populated independently -- this reaction has procedure: null but 12
+# populated procedureSteps, so always check both.
+query FullReactionDetail($input: [ReactionInput]) {
+  reactionQuery(reactionInput: $input, pageParameters: { page: 1, pageSize: 1 }) {
+    reactions {
+      id
+      scheme
+      reactionType
+      scaleDescription
+      products {
+        yield
+        substance {
+          substance {
+            RN
+            preferredName
+          }
+        }
+      }
+      stages {
+        stage
+        reactants {
+          substance {
+            RN
+            preferredName
+          }
+          modifier
+        }
+        reagents {
+          substance {
+            RN
+            preferredName
+          }
+        }
+        solvents {
+          substance {
+            RN
+            preferredName
+          }
+        }
+        catalysts {
+          substance {
+            RN
+            preferredName
+          }
+        }
+        conditions {
+          ordinal
+          temperature
+          duration
+          pressure
+          ph
+        }
+      }
+      procedure {
+        title
+        procedure
+        procedureSteps {
+          stepNumber
+          description
+        }
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "id": "43746245" }] }

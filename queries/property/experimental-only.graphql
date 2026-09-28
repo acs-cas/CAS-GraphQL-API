@@ -1,0 +1,19 @@
+# Restrict results to experimentally measured values only, excluding
+# predicted values, by setting isPredicted: false.
+# Verified against the live API 2026-09-28.
+query ExperimentalOnly($input: PropertyInput) {
+  propertyQuery(propertyInput: $input, pageParameters: { page: 1, pageSize: 5 }) {
+    properties {
+      name
+      value
+      isPredicted
+      isPreferredValue
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "RN": "58-08-2", "name": "DENSITY", "isPredicted": false } }

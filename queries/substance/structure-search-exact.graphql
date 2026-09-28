@@ -1,0 +1,22 @@
+# Exact structure search by SMILES. Verified against the live API 2026-09-28.
+# Note: EXA ("exact") does not mean "exactly one result" -- it matches the
+# same base connectivity across isotope-labeled variants, ionized forms,
+# and derivative substances (homopolymer, etc.), not only the single
+# substance the SMILES was drawn from.
+query StructureSearch($inputs: [SubstanceInput]) {
+  substanceQuery(substanceInput: $inputs) {
+    substances {
+      RN
+      preferredName
+      ... on SingleComponentSubstance {
+        canonicalSmiles
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "inputs": [{ "structure": { "SMILES": "O=C(O)C=1C=CC=CC1OC(=O)C", "searchType": "EXA" } }] }

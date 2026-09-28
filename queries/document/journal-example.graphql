@@ -1,0 +1,25 @@
+# Search journal articles by title keyword, selecting journal-specific
+# fields via an inline fragment on the concrete Journal type.
+# Verified against the live API 2026-09-01.
+query JournalExample($doc: [DocumentInput]) {
+  documentQuery(documentInput: $doc, pageParameters: { page: 1, pageSize: 2 }) {
+    documents {
+      title
+      docType
+      publicationDate
+      ... on Journal {
+        name
+        volume
+        issue
+        authorNames
+        doi
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "doc": [{ "docType": "JOURNAL", "title": "aspirin" }] }

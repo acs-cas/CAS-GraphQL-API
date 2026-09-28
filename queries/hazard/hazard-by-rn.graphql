@@ -1,0 +1,24 @@
+# Look up all hazard designations for a substance. Deliberately omits
+# hazardSymbols.hazardPictograph -- see hazard-query.md for why.
+# Verified against the live API 2026-09-02.
+query HazardByRN($input: [HazardInput]) {
+  hazardQuery(hazardInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    hazardDesignations {
+      assigningAuthority
+      authorityType
+      jurisdiction
+      signalWord
+      hazardAssignments {
+        code
+        hazardClass
+        statement
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2" }] }

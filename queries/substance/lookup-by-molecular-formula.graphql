@@ -1,0 +1,19 @@
+# Find all substances matching a molecular formula (Hill notation).
+# Verified against the live API 2026-09-02.
+query MolecularFormulaSearch($input: [SubstanceInput]) {
+  substanceQuery(substanceInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    substances {
+      RN
+      preferredName
+      molecularFormula
+      molecularWeight
+      substanceClasses
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "molecularFormula": "C6H15N" }] }

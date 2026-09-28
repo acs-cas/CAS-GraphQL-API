@@ -1,0 +1,40 @@
+# Traverse from a document into its curated substance findings, including
+# the role/superRole classification of how each substance functions in
+# that document (e.g. reactant, byproduct, therapeutic use). Scoping the
+# document search with substanceInput guarantees the traversed findings
+# include that substance. Verified against the live API 2026-09-01.
+query DocWithSubstanceFindings($doc: [DocumentInput], $subs: [SubstanceInput]) {
+  documentQuery(documentInput: $doc, substanceInput: $subs, pageParameters: { page: 1, pageSize: 1 }) {
+    documents {
+      title
+      docType
+      substanceFindingPage(pageParameters: { page: 1, pageSize: 5 }) {
+        substanceFindings {
+          nameInDocument
+          modifier
+          roles {
+            code
+            description
+          }
+          superRoles {
+            code
+            description
+          }
+          substance {
+            RN
+            preferredName
+          }
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "doc": [{ "docType": "PATENT" }], "subs": [{ "RN": "50-78-2" }] }

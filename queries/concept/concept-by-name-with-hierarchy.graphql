@@ -1,0 +1,25 @@
+# Look up a concept by name and traverse its thesaurus hierarchy
+# (broader/narrower concepts) and synonyms. Verified against the live API
+# 2026-09-02.
+query ConceptByName($input: ConceptInput) {
+  conceptQuery(conceptInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    concept {
+      afk
+      preferredName
+      subjectCategory
+      synonyms
+      broaderConcepts {
+        preferredName
+      }
+      narrowerConcepts {
+        preferredName
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "name": "chromatography" } }

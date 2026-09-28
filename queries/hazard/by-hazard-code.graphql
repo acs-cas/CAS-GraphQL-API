@@ -1,0 +1,23 @@
+# Find substances carrying a specific GHS hazard code.
+# Verified against the live API 2026-09-02.
+query HazardByCode($input: [HazardInput]) {
+  hazardQuery(hazardInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    hazardDesignations {
+      substance {
+        RN
+        preferredName
+      }
+      signalWord
+      hazardAssignments {
+        code
+        statement
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "code": ["H225"] }] }

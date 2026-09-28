@@ -1,0 +1,18 @@
+# Filter supplier listings by the isBulkAvailable / isScreeningCompound
+# boolean flags. Verified against the live API 2026-09-02.
+query CatalogBulkScreening($input: [CatalogInput]) {
+  catalogQuery(catalogInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    catalogItems {
+      name
+      supplierName
+      isBulkAvailable
+      isScreeningCompound
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2", "isBulkAvailable": true }] }

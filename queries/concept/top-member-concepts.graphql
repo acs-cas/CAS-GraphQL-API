@@ -1,0 +1,21 @@
+# Find the top-of-hierarchy concept(s) for a subject category (no
+# broader term), and list their immediate children.
+# Verified against the live API 2026-09-02.
+query TopMemberConcepts($input: ConceptInput) {
+  conceptQuery(conceptInput: $input, pageParameters: { page: 1, pageSize: 5 }) {
+    concept {
+      afk
+      preferredName
+      isTopMember
+      narrowerConcepts {
+        preferredName
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "subjectCategories": ["REACTIONS"], "isTopMember": true } }

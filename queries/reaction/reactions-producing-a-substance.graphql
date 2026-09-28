@@ -1,0 +1,26 @@
+# Find reactions where a given substance is a PRODUCT -- the core
+# retrosynthesis access pattern (what makes this substance?).
+# Verified against the live API 2026-09-01.
+query ReactionsProducingSubstance($input: [ReactionInput]) {
+  reactionQuery(reactionInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    reactions {
+      id
+      scheme
+      products {
+        yield
+        substance {
+          substance {
+            RN
+            preferredName
+          }
+        }
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "reactionParticipant": [{ "RN": "50-78-2", "role": "PRODUCT" }] }] }

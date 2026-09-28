@@ -1,0 +1,35 @@
+# Look up a biosequence's full profile: strands, base composition, and
+# every registered modification. Verified against the live API
+# 2026-09-02 -- this is a real modified siRNA-style oligonucleotide.
+query FullBiosequenceProfile($input: [BiosequenceInput]) {
+  biosequenceQuery(biosequenceInput: $input, pageParameters: { page: 1, pageSize: 1 }) {
+    biosequences {
+      RN
+      totalLength
+      morphology
+      biosequenceStrands {
+        strandNumber
+        length
+        sequence
+        type
+        topology
+      }
+      nucleicAcidCounts {
+        baseSymbol
+        baseCount
+      }
+      modifications {
+        type
+        description
+        residue
+        position
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "222716-86-1" }] }

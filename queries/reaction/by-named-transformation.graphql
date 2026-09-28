@@ -1,0 +1,19 @@
+# Search reactions by a named transformation type from the
+# ReactionTransformation enum. Verified against the live API 2026-09-01.
+query ByTransformation($input: [ReactionInput]) {
+  reactionQuery(reactionInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    reactions {
+      id
+      scheme
+      transformations {
+        name
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "transformations": ["ESTERIFICATION_OF_CARBOXYLIC_ACIDS"] }] }

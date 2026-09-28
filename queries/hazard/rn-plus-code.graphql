@@ -1,0 +1,25 @@
+# Check whether a specific substance carries a specific hazard code, and
+# see how that designation varies by jurisdiction.
+# Verified against the live API 2026-09-02.
+query HazardRNPlusCode($input: [HazardInput]) {
+  hazardQuery(hazardInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
+    hazardDesignations {
+      substance {
+        RN
+        preferredName
+      }
+      jurisdiction
+      signalWord
+      hazardAssignments {
+        code
+        statement
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2", "code": ["H318"] }] }

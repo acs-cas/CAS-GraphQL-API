@@ -1,0 +1,17 @@
+# Retrieve a rendered 2D structure depiction (SVG) directly from the API.
+# `images` lives on the concrete structure-bearing types, not the base
+# Substance interface, so select it via a type fragment.
+# Verified against the live API 2026-09-02.
+query GetStructureImage($input: [SubstanceInput]) {
+  substanceQuery(substanceInput: $input) {
+    substances {
+      RN
+      ... on SingleComponentSubstance {
+        images
+      }
+    }
+  }
+}
+
+# Variables:
+# { "input": [{ "RN": "50-78-2" }] }

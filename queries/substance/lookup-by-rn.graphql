@@ -1,0 +1,17 @@
+# Look up a single substance by its CAS Registry Number.
+# Verified against the live API 2026-09-01 (RN 50-78-2 = aspirin).
+query LookupByRN($inputs: [SubstanceInput]) {
+  substanceQuery(substanceInput: $inputs) {
+    substances {
+      RN
+      preferredName
+      molecularFormula
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "inputs": [{ "RN": "50-78-2" }] }

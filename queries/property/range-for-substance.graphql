@@ -1,0 +1,18 @@
+# Find a substance's property values within a range (RN-scoped).
+# Verified against the live API 2026-09-28.
+query PropertyRangeForRN($input: PropertyInput) {
+  propertyQuery(propertyInput: $input, pageParameters: { page: 1, pageSize: 5 }) {
+    properties {
+      name
+      value
+      isPredicted
+      isPreferredValue
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "input": { "RN": "58-08-2", "name": "MELTING_POINT", "value": { "low": 230, "high": 240 } } }
