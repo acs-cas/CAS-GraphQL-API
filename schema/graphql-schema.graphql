@@ -31,7 +31,7 @@
 # ================================================================================
 # 1. ROOT SCHEMA & SCALARS
 # Source file: schema.graphqls
-# Base scalars (Date, JSON), the root Query type, and cross-domain auth enums (AuthModule, AuthAttribute) used by authorization directives elsewhere in the API.
+# Base scalars (Date, JSON), the root Query type, and a cross-domain auth enum (AuthModule) used by authorization directives elsewhere in the API.
 # ================================================================================
 
 scalar Date @specifiedBy(url: "https://tools.ietf.org/html/rfc3339")
@@ -50,82 +50,6 @@ enum AuthModule {
     CONCEPT
     HAZARD
     PROPERTY
-}
-
-enum AuthAttribute {
-    ID
-    TITLE
-    TYPE
-    LANGUAGE
-    PUBDATE
-    CODEN
-    CAN
-    AN
-    INVENTOR
-    PATENT_NUMBER
-    APPLICATION_NUMBER
-    PUBLICATION_NUMBER
-    KIND_CODE
-    APPLICATION_DATE
-    ASSIGNEE
-    CLASSIFICATIONS
-    FAMILY
-    PRIORITY
-    CLAIMS
-    STATUS
-    OWNER
-    AUTHOR
-    DOI
-    SOURCE
-    SUBSTANCE_FINDINGS
-    CONCEPT_FINDINGS
-    REACTION_FINDINGS
-    PROPERTY_FINDINGS
-    ABSTRACT
-    RN
-    MOLFORM
-    MOLECULAR_FORMULA
-    MOLECULAR_WEIGHT
-    NAME
-    SYNONYMS
-    COMPONENTS
-    NOTE
-    ENTRY_DATE
-    UPDATE_DATE
-    TEXT_DESCRIPTOR
-    CLASS
-    DOCUMENT_FINDINGS
-    RELATED
-    HAZARD
-    RINGS
-    BIOSEQUENCE
-    MODIFICATIONS
-    NOTES
-    GENBANK
-    ATTRIBUTION
-    ATOM_MAP
-    PROCEDURE
-    DATA
-    TRANSFORMATION
-    ATOM_EFFICIENCY
-    FINDING
-    CATEGORY
-    SUBSTANCE
-    AUTHORITY
-    JURISDICTION
-    SIGNAL_WORD
-    SYMBOL
-    ASSIGNMENT
-    PROPERTY
-    VALUE
-    PROVIDER
-    ENTRY
-    CATALOG
-    CONDITION
-    IS_PREFERRED_VALUE
-    IS_PREDICTED
-    REACTION_MATERIAL
-    SCALE
 }
 
 # ================================================================================
