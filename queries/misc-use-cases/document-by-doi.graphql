@@ -1,0 +1,23 @@
+# Look up a single journal article by DOI -- title, authors, publication details, and
+# indexed concepts -- in one round-trip, bypassing full-text search.
+# Verified against the live API 2026-09-30 (DOI 10.1021/ac00113a008).
+query doiLookup($doi: String) {
+  documentQuery(documentInput: { doi: $doi }) {
+    documents {
+      ... on Journal {
+        title
+        authorNames
+        name
+        conceptFindingPage {
+          conceptFindings {
+            concept { preferredName }
+          }
+        }
+      }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Variables:
+# { "doi": "10.1021/ac00113a008" }

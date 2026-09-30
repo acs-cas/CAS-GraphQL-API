@@ -6,8 +6,9 @@
 # CAS GraphQL API — Notebooks
 
 Live, cross-linked Jupyter notebooks for the CAS GraphQL API — one notebook per topic
-(Overview, Authentication, GraphiQL, and each of the 8 query domains). Every query example is
-**live and executable** against the real API, not a static transcript.
+(Overview, Authentication, GraphiQL, and each of the 8 query domains), plus a Miscellaneous Use
+Cases notebook and a worked Retrosynthesis example. Every query example is **live and
+executable** against the real API, not a static transcript.
 
 The CAS GraphQL API supports workflow integration, chemical research, machine learning, and
 cheminformatics use cases. Learn more about workflow integration solutions from
@@ -16,10 +17,13 @@ __[CAS Custom Services℠](https://www.cas.org/solutions/cas-custom-services/wor
 ## What's here
 
 ```
-notebooks/    00_Overview, 01_Authentication, 02_Using_GraphiQL, then one per query domain
+notebooks/    00_Overview, 01_Authentication, 02_Using_GraphiQL, one per query domain,
+              plus Miscellaneous Use Cases and a Retrosynthesis worked example
 common/       cas_api.py (live GraphQL client)
 assets/       structure/reaction images, hazard pictograms
 queries/      the same runnable .graphql example files the notebooks execute
+schema/       a full reference copy of the CAS GraphQL API schema (SDL)
+mcp/          authentication guide for the CAS GraphQL MCP server
 ```
 
 ## Installation
@@ -61,6 +65,24 @@ itself is deliberately never printed). Clear it with either:
 
 - In the notebook UI: **Kernel > Restart Kernel and Clear All Outputs**, then save, or
 - From the command line: `jupyter nbconvert --clear-output --inplace notebooks/*.ipynb`
+
+## Schema reference
+
+A full copy of the CAS GraphQL API schema (SDL) is included at
+[`schema/graphql-schema.graphql`](schema/graphql-schema.graphql) for reference — every type,
+input, and query field in one file.
+
+This schema can change at any time as the API evolves; every effort will be made to keep this
+copy current, but it's a snapshot, not a live feed — treat it as a helpful reference rather than
+the final word.
+
+## MCP Server
+
+If you'd rather access the API through an MCP client than raw GraphQL, see
+[`mcp/authentication.md`](mcp/authentication.md) for how to authenticate to the CAS GraphQL MCP
+server — a separate endpoint from the GraphQL API documented in the rest of this project, with
+its own OAuth2 client-credentials flow and its own set of tools
+(`search_substances`, `execute_graphql_query`, `list_query_types_tool`, `describe_type_tool`).
 
 ## License
 

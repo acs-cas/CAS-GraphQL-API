@@ -1,0 +1,15 @@
+# Resolve a CAS Registry Number to its canonical molfile (V2000 connection table).
+# Verified against the live API 2026-09-30 (RN 3133533-35-1).
+query GetMolfile($rn: String) {
+  substanceQuery(substanceInput: [{RN: $rn}]) {
+    substances {
+      RN
+      ... on SingleComponentSubstance {
+        molFileV2
+      }
+    }
+  }
+}
+
+# Variables:
+# { "rn": "3133533-35-1" }

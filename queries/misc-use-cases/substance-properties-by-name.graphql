@@ -1,0 +1,21 @@
+# Retrieve physical/chemical properties for a substance identified by common or trade name.
+# CAS resolves synonyms to the canonical registry entry.
+# Verified against the live API 2026-09-30 ("Actimoxi" -> Amoxicillin, 100 properties).
+query propertyQuery($name: String) {
+  substanceQuery(substanceInput: { name: $name }) {
+    substances {
+      preferredName
+      propertyPage {
+        properties {
+          name
+          value
+          condition
+          isPredicted
+        }
+      }
+    }
+  }
+}
+
+# Variables:
+# { "name": "Actimoxi" }

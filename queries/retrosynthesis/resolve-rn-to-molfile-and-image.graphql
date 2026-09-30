@@ -1,0 +1,18 @@
+# Resolve a CAS Registry Number to its molfile, a ready-to-embed SVG depiction, and
+# preferred name -- used for every molecule in a retrosynthesis route.
+# Verified against the live API 2026-09-30 (RN 138642-62-3).
+query M($rn: String) {
+  substanceQuery(substanceInput: [{RN: $rn}]) {
+    substances {
+      RN
+      preferredName
+      ... on SingleComponentSubstance {
+        molFileV2
+        images
+      }
+    }
+  }
+}
+
+# Variables:
+# { "rn": "138642-62-3" }

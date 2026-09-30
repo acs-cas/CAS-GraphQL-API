@@ -1,0 +1,22 @@
+# Forward-validate a retrosynthetic disconnection: given the reactant RN(s) a
+# retrosynthesis plan predicts for one step, confirm a real literature reaction exists
+# that combines them into the expected product.
+# Verified against the live API 2026-09-30 (RNs 138642-62-3 + 2711863-64-6 -> reaction 35659280).
+query Forward($rns: [ReactionParticipantInput]) {
+  reactionQuery(reactionInput: {reactionParticipant: $rns}, pageParameters: {pageSize: 5}) {
+    reactions {
+      id
+      publicIdentifier
+      scheme
+      products { substance { substance { RN } } yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Variables (two-reactant example):
+# { "rns": [{ "RN": "138642-62-3", "role": "REACTANT" }, { "RN": "2711863-64-6", "role": "REACTANT" }] }
+#
+# Note the double-nested substance { substance { RN } } -- ReactionProduct.substance is a
+# ReactionParticipant wrapper, not Substance directly; the inner substance field is what
+# actually resolves to Substance.

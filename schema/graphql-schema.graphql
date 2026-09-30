@@ -1,0 +1,3695 @@
+# ================================================================================
+# CAS Lithium API — GraphQL Schema (SDL)
+# Version: v0.30.5
+#
+# This file combines every .graphqls schema module from the Lithium API into a
+# single, ordered, read-through reference. It is generated for publishing —
+# the source of truth is the versioned multi-file schema shipped with the API.
+#
+# Contents (in order):
+#   1.  Root Schema & Scalars       — schema.graphqls
+#   2.  Validation Directives       — directive.graphqls
+#   3.  Shared Range Inputs         — range.graphqls
+#   4.  Pagination                  — paging.graphqls
+#   5.  Structure Search            — structure.graphqls
+#   6.  Substances                  — substance.graphqls
+#   7.  Biosequences                — biosequence.graphqls
+#   8.  Reactions                   — reaction.graphqls
+#   9.  Properties                  — property.graphqls
+#   10. Hazards (GHS)               — hazard.graphqls
+#   11. Commercial Catalogs         — catalog.graphqls
+#   12. Concepts (Controlled Vocab) — concept.graphqls
+#   13. Documents (Patents/Journal) — document.graphqls
+#   14. Document Findings           — finding.graphqls
+#
+# Each section below is reproduced verbatim from its source module, with a
+# banner noting the originating file. Query fields are additive: the root
+# `Query` type is declared once (Root Schema) and each domain module extends
+# it (`extend type Query { ... }`) with its own query entry point(s).
+# ================================================================================
+
+# ================================================================================
+# 1. ROOT SCHEMA & SCALARS
+# Source file: schema.graphqls
+# Base scalars (Date, JSON), the root Query type, and cross-domain auth enums (AuthModule, AuthAttribute) used by authorization directives elsewhere in the API.
+# ================================================================================
+
+scalar Date @specifiedBy(url: "https://tools.ietf.org/html/rfc3339")
+
+scalar JSON
+
+type Query {
+}
+
+enum AuthModule {
+    DOCUMENT
+    PATENT
+    JOURNAL
+    SUBSTANCE
+    REACTION
+    CONCEPT
+    HAZARD
+    PROPERTY
+}
+
+enum AuthAttribute {
+    ID
+    TITLE
+    TYPE
+    LANGUAGE
+    PUBDATE
+    CODEN
+    CAN
+    AN
+    INVENTOR
+    PATENT_NUMBER
+    APPLICATION_NUMBER
+    PUBLICATION_NUMBER
+    KIND_CODE
+    APPLICATION_DATE
+    ASSIGNEE
+    CLASSIFICATIONS
+    FAMILY
+    PRIORITY
+    CLAIMS
+    STATUS
+    OWNER
+    AUTHOR
+    DOI
+    SOURCE
+    SUBSTANCE_FINDINGS
+    CONCEPT_FINDINGS
+    REACTION_FINDINGS
+    PROPERTY_FINDINGS
+    ABSTRACT
+    RN
+    MOLFORM
+    MOLECULAR_FORMULA
+    MOLECULAR_WEIGHT
+    NAME
+    SYNONYMS
+    COMPONENTS
+    NOTE
+    ENTRY_DATE
+    UPDATE_DATE
+    TEXT_DESCRIPTOR
+    CLASS
+    DOCUMENT_FINDINGS
+    RELATED
+    HAZARD
+    RINGS
+    BIOSEQUENCE
+    MODIFICATIONS
+    NOTES
+    GENBANK
+    ATTRIBUTION
+    ATOM_MAP
+    PROCEDURE
+    DATA
+    TRANSFORMATION
+    ATOM_EFFICIENCY
+    FINDING
+    CATEGORY
+    SUBSTANCE
+    AUTHORITY
+    JURISDICTION
+    SIGNAL_WORD
+    SYMBOL
+    ASSIGNMENT
+    PROPERTY
+    VALUE
+    PROVIDER
+    ENTRY
+    CATALOG
+    CONDITION
+    IS_PREFERRED_VALUE
+    IS_PREDICTED
+    REACTION_MATERIAL
+    SCALE
+}
+
+# ================================================================================
+# 2. VALIDATION DIRECTIVES
+# Source file: directive.graphqls
+# Custom input-validation directives (@Range, @Min, @Expression, @ValidateRange, @ValidateStructureInput, @ValidateReactionParticipant, @ValidatePersonInfo, @ValidateNotClause) applied to input fields and arguments throughout the schema.
+# ================================================================================
+
+directive @Range(min : Int = 0, max : Int = 2147483647, message : String = "graphql.validation.Range.message") on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @Min(value : Int! = 0, message : String = "graphql.validation.Min.message") on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @Expression(value : String!, message : String = "graphql.validation.Expression.message") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @ValidateRange on INPUT_FIELD_DEFINITION
+
+directive @ValidateStructureInput on INPUT_FIELD_DEFINITION
+
+directive @ValidateReactionParticipant on INPUT_FIELD_DEFINITION
+
+directive @ValidatePersonInfo on INPUT_FIELD_DEFINITION
+
+directive @ValidateNotClause on INPUT_FIELD_DEFINITION
+
+# ================================================================================
+# 3. SHARED RANGE INPUTS
+# Source file: range.graphqls
+# Reusable range input types (FloatRange, IntegerRange, DateRange) used across query inputs wherever a bounded or inclusive value range can be searched.
+# ================================================================================
+
+# Represents Float Range input with Boolean inclusive constraints.
+input FloatRange {
+    high: Float
+    low: Float
+    value: Float
+    inclusive: Boolean = true
+}
+
+# Represents Integer Range input with Boolean inclusive constraints.
+input IntegerRange {
+    high: Int
+    low: Int
+    value: Int
+    inclusive: Boolean = true
+}
+
+# Represents Date Range input with Boolean inclusive constraints (YYYY-MM-DD , YYYY/MM/DD, YYYY format).
+input DateRange {
+    high: Date
+    low: Date
+    value: Date
+    inclusive: Boolean = true
+}
+# ================================================================================
+# 4. PAGINATION
+# Source file: paging.graphqls
+# PageParameters input, PageInformation type, the Page interface, and the per-domain *Page result wrapper types (DocumentPage, SubstancePage, ReactionPage, etc.).
+# ================================================================================
+
+# Describes the input arguments to control the paginated data that is retrieved.
+input PageParameters {
+    # Specifies which page of results to retrieve. Must be a positive integer starting from 1. This is used for pagination through large result sets. If PageParams are omitted, defaults to 1
+    page: Int = 1 @Min(value: 1)
+    # Controls how many items are displayed per page. Value must be between 1 and 100. Smaller values load faster while larger values require fewer page loads. If PageParams are omitted, defaults to 100
+    pageSize: Int = 100 @Range(min: 1, max: 100)
+}
+
+# Describes context about a paginated result set.
+type PageInformation {
+    # Whether there is a next page available
+    hasNextPage: Boolean
+    # Current page number
+    currentPage: Int
+    # Whether there is a previous page available
+    hasPreviousPage: Boolean
+    # Number of items in each page
+    pageSize: Int
+    # Total number of items across all pages
+    totalItems: Int
+    # Total number of pages available
+    totalPages: Int
+}
+
+interface Page {
+    pageInformation: PageInformation
+}
+
+type DocumentPage implements Page {
+    documents: [Document]
+    pageInformation: PageInformation
+}
+
+type SubstancePage implements Page {
+    substances: [Substance]
+    pageInformation: PageInformation
+}
+
+type BiosequencePage implements Page {
+    biosequences: [Biosequence]
+    pageInformation: PageInformation
+}
+
+type ReactionPage implements Page {
+    reactions: [Reaction]
+    pageInformation: PageInformation
+}
+
+type ConceptPage implements Page {
+    concept: [Concept]
+    pageInformation: PageInformation
+}
+
+type PropertyPage implements Page {
+    properties: [Property]
+    pageInformation: PageInformation
+}
+
+type HazardDesignationPage implements Page {
+    hazardDesignations: [HazardDesignation]
+    pageInformation: PageInformation
+}
+
+type CatalogItemPage implements Page {
+    catalogItems: [CatalogItem]
+    pageInformation: PageInformation
+}
+
+type DocumentFindingPage implements Page {
+    documentFindings: [DocumentFinding]
+    pageInformation: PageInformation
+}
+
+type SubstanceFindingPage implements Page {
+    substanceFindings: [SubstanceFinding]
+    pageInformation: PageInformation
+}
+
+type ConceptFindingPage implements Page {
+    conceptFindings: [ConceptFinding]
+    pageInformation: PageInformation
+}
+
+type ReactionFindingPage implements Page {
+    reactionFindings: [ReactionFinding]
+    pageInformation: PageInformation
+}
+
+type PropertyFindingPage implements Page {
+    propertyFindings: [PropertyFinding]
+    pageInformation: PageInformation
+}
+
+#type AnalyticalMethodPage implements Page {
+#    analyticalMethods: [AnalyticalMethod]
+#    pageInformation: PageInformation
+#}
+
+#type AnalyticalMethodFindingPage implements Page {
+#    analyticalMethodFindings: [AnalyticalMethodFinding]
+#    pageInformation: PageInformation
+#}
+
+# ================================================================================
+# 5. STRUCTURE SEARCH
+# Source file: structure.graphqls
+# StructureSearchType enum (EXA, CSS, SSS, FAM, AS_DRAWN, SUBSTRUCTURE, SIMILARITY) shared by substance and reaction structure search inputs.
+# ================================================================================
+
+enum StructureSearchType {
+    EXA
+    CSS
+    SSS
+    FAM
+    AS_DRAWN
+    SUBSTRUCTURE
+    SIMILARITY
+}
+# ================================================================================
+# 6. SUBSTANCES
+# Source file: substance.graphqls
+# Core substance registry domain: substanceQuery, SubstanceInput/SubstanceStructureInput, the Substance interface, and its concrete implementations (SingleComponentSubstance, MultiComponentSubstance, AlloySubstance, TabularInorganicSubstance) plus their shared component/structure types.
+# ================================================================================
+
+extend type Query {
+    # Searches the CAS Registry for substances by identifying criteria (RN, name, molecular formula/weight, InChIKey, structure, substance class, component RN), and returns only those substances that also satisfy any supplied property, hazard, document, or catalog criteria — e.g., a given molecular formula and a boiling point in a given range, or a given RN and an H225 hazard designation. Returns matching substance records with registry data, names/synonyms, classifications, and related information.
+    substanceQuery(
+        substanceInput: [SubstanceInput]
+        propertyInput: [PropertyInput]
+        hazardInput: [HazardInput]
+        documentInput: [DocumentInput]
+        catalogInput: [CatalogInput]
+        pageParameters: PageParameters
+    ): SubstancePage
+}
+
+# Defines search inputs to query substances.  Multiple inputs are evaluated with AND by default.
+input SubstanceInput {
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Chemical name of a substance to be searched.
+    name: String
+    # Primary or alternate molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: FloatRange @ValidateRange
+    # Number of unique structural components making up the substance.
+    numberOfComponents: IntegerRange @ValidateRange
+    # Date the substance was first entered into the Registry.
+    entryDate: DateRange @ValidateRange
+    # Date the substance record was last updated.
+    lastUpdateDate: DateRange @ValidateRange
+    # Date the structural representation was last updated.
+    lastStructureUpdateDate: DateRange @ValidateRange
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # CAS Registry Number assigned to a component in a multicomponent substance.
+    componentRN: String
+    # Connection table for a substance using several different formats.
+    structure: SubstanceStructureInput @ValidateStructureInput
+}
+
+# Defines structure search input formats to query substances.
+input SubstanceStructureInput {
+    # CAS proprietary structure connection file format.
+    CXF: String
+    # Textual representation of a connection table.
+    molFile: String
+    # Linear text format for representing chemical structure
+    SMILES : String
+    # Text based digital signature for representing chemical structure
+    inchi: String
+    # Type of structure search (e.g., As Drawn, Substructure)
+    searchType: StructureSearchType
+}
+
+# Describes the chemically discrete and identifiable compound.
+interface Substance {
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName:    String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+}
+
+enum SubstanceClass {
+    ALLOY
+    COORDINATION_COMPOUND
+    ELEMENT
+    GENERIC_REGISTRATION
+    GENERAL_DERIVATIVE
+    INCOMPLETELY_DEFINED_SUBSTANCE
+    MANUAL_REGISTRATION
+    MINERAL
+    MIXTURE
+    NUCLEIC_ACID_SEQUENCE
+    ORGANIC_INORGANIC_SMALL_MOLECULE
+    POLYMER
+    PROTEIN_PEPTIDE_SEQUENCE
+    RADICAL_ION
+    REGISTERED_CONCEPT
+    RING_PARENT
+    SALT_AND_COMPOUND_WITH
+    SUBATOMIC_PARTICLE
+    TABULAR_INORGANIC       
+}
+
+# A group of substances that have a useful commonality.
+type RelatedSubstance {
+    relationshipType: RelationshipType
+    substance: Substance
+}
+
+enum RelationshipType {
+    LINKED_POLYMER
+    LINKED_SEQUENCE
+}
+
+# Describes a chemically discrete substance that makes up part of a larger substance.
+interface Component {
+    # Molecular formula for the component expressed in Hill order.
+    molecularFormula: String
+    # Display name for the component.
+    displayName: String
+    # Note providing additional descriptive information about the component.
+    notes: String
+    # Substance classifications of components (e.g., polymer, alloy, manual registration).
+    componentClass: [SubstanceClass]
+}
+
+type ComponentRange {
+    lower: Float!
+    upper: Float!
+    displayRange: String!
+}
+
+type Fraction {
+    numerator: Int!
+    denominator: Int!
+    displayFraction: String!
+}
+
+# Describes multiple structural representations describing how atoms are connected.
+interface StructureRepresentation {
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+}
+
+# Substance containing only one discrete compound that may also contain an isotope or single atom fragment (e.g. Na, K)
+type SingleComponentSubstance implements Substance & Component & StructureRepresentation {
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName: String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+    # Note providing additional descriptive information about the component.
+    notes: String
+    # Substance classifications of components (e.g., polymer, alloy, manual registration).
+    componentClass: [SubstanceClass]
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+    # Single atom fragments associated with the substance.
+    singleAtomFragment: [String]
+    # Isotope information where exact location is unknown.
+    isotopeUnknownLocation: String
+    # Base substance associated with this component.
+    baseSubstance: Substance
+    # Ring systems present in the substance.
+    ringSystems: [RingSystem]
+}
+
+# Describes a set of one or more atoms in a single cyclic structural unit.
+type RingSystem {
+    # Unique identifier for the ring system.
+    ringSystemIdentifier: String!
+    # Graph node identifier for the ring system.
+    graphNodeIdentifier: String!
+    # Graph identifier for the ring system.
+    graphIdentifier: String!
+    # Number of rings in the ring system.
+    numberOfRings: Int!
+}
+
+# Substance containing more than one discrete substance.
+type MultiComponentSubstance implements Substance & StructureRepresentation {
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName: String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+    # Components making up the multicomponent substance.
+    components: [SingleComponent]
+    # Multiplier indicating repetition of components (often for polymers).
+    multiplier: String
+}
+
+# Describes the components of a multicomponent substance.
+type SingleComponent implements Component {
+    # Molecular formula for the component expressed in Hill order.
+    molecularFormula: String
+    # Display name for the component.
+    displayName: String
+    # Note providing additional descriptive information about the component.
+    notes: String
+    # Substance classifications of components (e.g., polymer, alloy, manual registration).
+    componentClass: [SubstanceClass]
+    # Substance associated with this component.
+    substance: Substance
+    # Coefficient value for this component.
+    coefficientValue: Int
+    # Fractional coefficient for this component.
+    coefficientFraction: Fraction
+}
+
+# Describes a metallic substance consisting of two or more elements.
+type AlloySubstance implements Substance & StructureRepresentation{
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName: String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+    # Components making up the alloy substance.
+    components: [AlloyComponent]
+}
+
+# Describes an individual element that is part of an alloy.
+type AlloyComponent implements Component {
+    # Molecular formula for the component expressed in Hill order.
+    molecularFormula: String
+    # Display name for the component.
+    displayName: String
+    # Note providing additional descriptive information about the component.
+    notes: String
+    # Substance classifications of components (e.g., polymer, alloy, manual registration).
+    componentClass: [SubstanceClass]
+    # Substance associated with this alloy component.
+    substance: Substance
+    # Percent composition value for this component.
+    percentCompValue: Float!
+    # Percent composition range for this component.
+    percentCompRange: ComponentRange
+    isBase: Boolean
+    isUnknown: Boolean
+}
+
+# Describes an inorganic substance that do not have a molecular structure and are in tabular representation.
+type TabularInorganicSubstance implements Substance & StructureRepresentation {
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName: String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+    # Components making up the tabular inorganic substance.
+    components: [TabularInorganicComponent]
+}
+
+# Describes an individual component of an inorganic substance.
+type TabularInorganicComponent implements Component {
+    # Molecular formula for the component expressed in Hill order.
+    molecularFormula: String
+    # Display name for the component.
+    displayName: String
+    # Note providing additional descriptive information about the component.
+    notes: String
+    # Substance classifications of components (e.g., polymer, alloy, manual registration).
+    componentClass: [SubstanceClass]
+    # Substance associated with this tabular inorganic component.
+    substance: Substance
+    # Ratio value for this component.
+    ratioValue: Float!
+    # Ratio range for this component.
+    ratioRange: ComponentRange
+    # Display value for ratio.
+    displayValue: String
+    isUnknown: Boolean
+}
+
+# ================================================================================
+# 7. BIOSEQUENCES
+# Source file: biosequence.graphqls
+# Nucleic-acid and protein/peptide sequence domain: biosequenceQuery, BiosequenceInput, the Biosequence type (implements Substance & StructureRepresentation), strand/modification detail types, GenBank data, and patent sequence annotations.
+# ================================================================================
+
+extend type Query {
+    # Searches CAS-registered biosequences (nucleic acids and proteins/peptides) by identifying criteria (RN, name, sequence, substance class, strand count/length, modification status), and returns only those biosequences that also satisfy any supplied hazard, document, or catalog criteria — e.g., a sequence match that's also commercially available in a supplier catalog, or that carries a specific hazard designation. Returns matching biosequence records with registry data, strand/modification details, and related structures.
+    biosequenceQuery(
+        biosequenceInput: [BiosequenceInput],
+        hazardInput: [HazardInput]
+        documentInput: [DocumentInput]
+        catalogInput: [CatalogInput]
+        pageParameters: PageParameters
+    ): BiosequencePage
+}
+
+# Defines search inputs to query biosequences.  Multiple inputs are evaluated with AND by default.
+input BiosequenceInput {
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Chemical name of a substance to be searched.
+    name: String
+    # Nucleic Acid or Protein Peptide Substance Class
+    biosequenceSubstanceClass: BiosequenceSubstanceClass
+    # Date the substance was first entered into the Registry.
+    entryDate: DateRange
+    # Date the substance record was last updated.
+    lastUpdateDate: DateRange
+    # Date the structural representation was last updated.
+    lastStructureUpdateDate: DateRange
+    # Total length of the biosequence in base units.
+    totalLength: IntegerRange
+    # Number of strands in the biosequence.
+    numberOfStrands: IntegerRange
+    # Length of the strand in base units.
+    strandLength: [IntegerRange]
+    # Sequence string representing nucleic acids or amino acids.
+    sequence: String
+    # Flag indicating if the biosequence is modified or not.
+    modified: Boolean
+    # Type of modification applied to the sequence.
+    modification: [BioSequenceModificationDefinition]
+}
+
+# Defines the modifications of a biosequence.  This can be an array input with multiple modifications specified. Multiple inputs are evaluated with AND by default.
+input BioSequenceModificationDefinition {
+    # The type of modification to the biosequence.
+    modificationType: SequenceModificationType
+    # Text consisting of the locant and terms describing the modification.
+    modificationDescription: String
+    # An abbreviation representing the name of the amino acid or nucleic acid residue at the modified position.
+    residue: String
+    # Position of the residue containing the modification.
+    position: String
+}
+
+enum SequenceModificationType {
+    DNA_CONTAINING
+    PNA_CONTAINING
+    RNA_CONTAINING
+    BRIDGE
+    COMPLEX
+    COPOLYMER
+    COVALENT_BRIDGE
+    HOMOPOLYMER
+    LABELED
+    METAL_COMPLEX
+    MODIFICATION
+    MODIFIED_BASE
+    MODIFIED_LINK
+    POLYA_CONTAINING
+    RADICAL_ION
+    REPLACEMENT
+    STEREO
+    STEREOISOMER
+    TERMINAL_MOD
+    UNCOMMON
+    UNCOMMON_BASE
+    UNCOMMON_LINK
+}
+
+enum BiosequenceSubstanceClass {
+    NUCLEIC_ACID_SEQUENCE
+    PROTEIN_PEPTIDE_SEQUENCE
+}
+
+# A series of nucleotides or amino acids that encodes information in a biological system.
+type Biosequence implements Substance & StructureRepresentation {
+    # Source of registration of the substance (e.g. CA, Chemical Catalog Supplier).
+    source: String!
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Primary molecular formula expressed in Hill order; may include parentheses for polymers.
+    molecularFormula: String
+    # Alternate molecular formula or descriptive variant; may include parentheses for polymers.
+    altMolecularFormula: String
+    # Molecular weight of the substance in grams per mole (g/mol).
+    molecularWeight: String
+    # CAS preferred name for the substance.
+    preferredName: String
+    # Recommended display name by CAS; often the common name or uninverted name.
+    displayName: String
+    # Uninverted name form sometimes used for display purposes
+    uninvertedName: String
+    # Common or trivial name for the substance.
+    commonName: String
+    # Other synonyms associated with the substance
+    otherSynonyms: [String]
+    # Number of unique structural components making up the substance.
+    numberOfComponents: Int
+    # Registry numbers that have been deleted but remain linked to this substance.
+    deletedRN: String
+    # Alternate registry numbers associated with the substance.
+    alternateRN: String
+    # Preferred registry number with preferred structural representation.
+    preferredRN: String
+    # Note providing additional descriptive information about the substance.
+    note: String
+    # Date the substance was first entered into the Registry.
+    entryDate: String
+    # Date the substance record was last updated.
+    lastUpdateDate: String
+    # Date the structural representation was last updated.
+    lastStructureUpdate: String
+    # Structured textual descriptor capturing stereo or other details not in the connection table.
+    textDescriptor:String
+    # Substance classifications (e.g., polymer, alloy, manual registration).
+    substanceClasses: [SubstanceClass]
+    # Document findings (including roles, modifiers, etc.) associated with this substance.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # Related substances grouped by relationship type (e.g., stereoisomer, linked polymer).
+    relatedSubstances: [RelatedSubstance]
+    # Hazard designations associated with the substance.
+    hazardDesignationPage(pageParameters: PageParameters): HazardDesignationPage
+    # Catalogs referencing this substance.
+    catalogItemPage(pageParameters: PageParameters): CatalogItemPage
+    # Properties associated with the substance (physical, chemical), including experimental and predicted.
+    propertyPage(pageParameters: PageParameters): PropertyPage
+    # Canonical SMILES string representing the structure.
+    canonicalSmiles: String
+    # Isomeric SMILES string including stereochemistry and isotopic labeling
+    isomericSmiles: String
+    # InChI string representation of the structure.
+    inchi: String
+    # InChIKey condensed representation of the InChI.
+    inchiKey: String
+    # Molfile representation in V2000 format.
+    molFileV2: String
+    # Molfile representation in V3000 format.
+    molFileV3: String
+    # Image representation of the structure (SVG format).
+    images: [String]
+    # Total length of the biosequence in base units.
+    totalLength: Int!
+    # Morphology descriptor for the biosequence (e.g., multistranded, multi-chain).
+    morphology: String
+    # Strands making up the biosequence.
+    biosequenceStrands:[BiosequenceStrand]
+    # Modifications applied to the biosequence.
+    modifications: [BiosequenceModification]
+    # Patent annotations associated with the biosequence.
+    patentAnnotations: [PatentAnnotation]
+    # Note providing additional information about the biosequence.
+    biosequenceNote: String
+    # Counts of nucleic acid bases in the sequence.
+    nucleicAcidCounts:[NucleicAcidCount]
+    # GenBank information associated with the biosequence.
+    genbankInformation: [GenbankInformation]
+}
+
+# Single linear chain of nucleotides or amino acids making up a biosequence.
+type BiosequenceStrand {
+    # Strand number identifying the strand.
+    strandNumber: Int!
+    # Length of the strand in base units.
+    length: Int!
+    # Sequence string representing nucleic acids or amino acids.
+    sequence: String!
+    # Type of strand (e.g., RNA, DNA).
+    type: String
+    # Topology of the strand (e.g., linear, cyclic).
+    topology: String!
+}
+
+# Specific alteration to a nucleotide or amino acid biosequence or to a residue within that biosequence.
+type BiosequenceModification {
+    # Type of modification applied to the sequence.
+    type: String!
+    # Description of the modification.
+    description: String
+    # Display location of the modification.
+    displayLocation: String
+    # Residue involved in the modification.
+    residue: String
+    # Position of the modification in the sequence.
+    position: Int
+    # Strand number where the modification occurs.
+    strandNumber: Int
+    # Count of occurrences of this modification.
+    occurrenceCount: Int
+    # Additional targets involved in the modification.
+    modificationTargets: [ModificationTarget]
+}
+
+# Identifies where a modification is applied, not the modification itself.
+type ModificationTarget {
+    # Residue involved in the modification target.
+    residue: String
+    # Position of the modification target.
+    position: Int
+    # Strand number of the modification target.
+    strandNumber: Int
+}
+
+# Identifies where in the patent the biosequence was located.
+type PatentAnnotation {
+    # Reference containing patent number and sequence ID information.
+    reference: String!
+    # Source of the biosequence in the patent.
+    source: String
+    # Features associated with the patent annotation.
+    annotationFeatures: [AnnotationFeature]
+}
+
+# If present, must contain one of these attributes.
+type AnnotationFeature {
+    # Feature name associated with the annotation.
+    feature: String
+    # Location of the feature in the sequence.
+    location: String
+    # Description of the feature.
+    description: String
+}
+
+# Count of each base associated with a nucleic acid.
+type NucleicAcidCount {
+    # One-letter symbol representing a nucleic acid base.
+    baseSymbol: String!
+    # Count of the nucleic acid base present in the sequence.
+    baseCount: Int!
+}
+
+# Refers to publicly available biological sequence data stored in GenBank.
+type GenbankInformation {
+    # GenBank accession number for the sequence.
+    accessionNumber: String!
+    # GenBank version identifier.
+    version: String
+    # Definition of the sequence from GenBank.
+    definition: String
+    # Organism name associated with the sequence.
+    organismName: String
+    # Taxonomic terms associated with the sequence.
+    taxons: [String]
+    # Features associated with the sequence.
+    feature: [GenbankFeature]
+}
+
+# An annotated element within a nucleotide sequence record that identifies a specific biological region and attributes.
+type GenbankFeature {
+    # Key describing the type of feature.
+    key: String
+    # Location of the feature in the sequence.
+    location: String
+    # Qualifiers providing additional information about the feature.
+    qualifier: String
+}
+# ================================================================================
+# 8. REACTIONS
+# Source file: reaction.graphqls
+# CAS-indexed reaction domain: reactionQuery, ReactionInput (participants, conditions, transformations), the Reaction type (stages, procedure, products), and the full ReactionTransformation named-reaction enum.
+# ================================================================================
+
+extend type Query {
+    # Searches CAS-indexed chemical reactions by internal reaction ID, reaction type (full/half/failed), named transformation, participants, reaction scheme, or entry date. Returns matching reactions including products, stages, procedure text, and scale.
+    reactionQuery(reactionInput: [ReactionInput], pageParameters: PageParameters): ReactionPage
+}
+
+# Defines search inputs to query reactions.  Multiple inputs are evaluated with AND by default.
+input ReactionInput {
+    # Unique internal identifier for the reaction (may be legacy or system-generated).
+    id: String
+    # Date the reaction became available (entry to the system or database).
+    entryDate: DateRange @ValidateRange
+    # Reaction type classification: full, half, or failed.
+    reactionType: ReactionType
+    # Participant in a reaction.
+    reactionParticipant: [ReactionParticipantInput] @ValidateReactionParticipant
+    # Named transformation(s) assigned to the reaction (e.g., “Reduction of Nitro Compounds to Amines”).
+    transformations: [ReactionTransformation]
+    # Required reaction scheme representing products=reactants.
+    scheme: String
+    # Author-described experimental procedure text and related data.
+    reactionNote: String
+    # Conditions (temperature, pressure, pH, duration) applied within this stage.
+    conditions: ConditionInput
+}
+
+# Query reactions by substances involved in the reaction. Multiple inputs are evaluated with AND by default.
+input ReactionParticipantInput {
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Auxiliary descriptor or textual modifier (AMD) describing a non-structurable derivative.
+    modifier: String
+    # Role of the participant in the reaction (reactant contributes carbon; reagent does not; catalyst accelerates; solvent medium).
+    role: ReactionRole
+    # Display or reported yield value (percent; whole number, 0 < value ≤ 100).
+    yield: FloatRange @ValidateRange
+    # Search this participant by chemical structure. Combined with role, only matches a participant satisfying both.
+    structure: SubstanceStructureInput @ValidateStructureInput
+}
+
+enum ReactionRole {
+    PRODUCT
+    REACTANT
+    REAGENT
+    CATALYST
+    SOLVENT
+}
+
+# Query reactions by experimental conditions as described by the author or publication.
+input ConditionInput {
+    # pH value or range; numeric or shorthand (acidified/basified/neutralized).
+    ph: FloatRange @ValidateRange
+    # Pressure value or range (e.g., atm, bar, psi).
+    pressure: PressureInput
+    # Temperature value or range (e.g., °C default; rt ≈ ambient).
+    temperature: TemperatureInput
+    # Duration value or range (e.g., h, min, s; “overnight” shorthand permissible).
+    duration: DurationInput
+}
+
+# Query reactions by the pressure condition when reported by the author or publication.
+input PressureInput {
+    value: FloatRange @ValidateRange
+    unit: PressureUnit
+}
+
+enum PressureUnit {
+    ATM
+    BAR
+    BARG
+    GPA
+    HPA
+    KBAR
+    KG_CM2
+    KPA
+    MBAR
+    MM_HG
+    MPA
+    PA
+    PSI
+    PSIG
+    TORR
+}
+
+# Query reactions by the temperature condition when reported by the author or publication.
+input TemperatureInput {
+    value: FloatRange @ValidateRange
+    unit: TemperatureUnit
+}
+
+enum TemperatureUnit {
+    CELSIUS
+    FAHRENHEIT
+    KELVIN
+    RANKINE
+}
+
+input DurationInput {
+    value: FloatRange @ValidateRange
+    unit: DurationUnit
+}
+
+enum DurationUnit {
+    MILLISECONDS
+    SECONDS
+    MINUTES
+    HOURS
+    DAYS
+    WEEKS
+    MONTHS
+}
+
+input ReactionStructureInput {
+    # Base64 encoded CXF representing the full reaction scheme.
+    CXF: String
+    # Reaction SMILES in the following formats are accepted: rct>>prd; rct.rct>>prd.prd; rct>rgt>prd; rct>>; >>prd
+    reactionSMILES: String
+    searchType: ReactionSearchType
+}
+
+enum ReactionType {
+    FULL
+    HALF
+    FAILED
+}
+
+enum ReactionSearchType {
+    AS_DRAWN
+    SUBSTRUCTURE
+}
+
+# Describes a chemical transformation process.
+type Reaction {
+    # Unique internal identifier for the reaction (may be legacy or system-generated).
+    id: String
+    # Public display and searchable identifier for a single step reaction.
+    publicIdentifier: String
+    # Date the reaction became available (entry to the system or database).
+    entryDate: String
+    # Contractual or source attribution statement for reactions from specific publications.
+    attribution: String
+    # Reaction type classification: full, half, or failed.
+    reactionType: ReactionType
+    # The source document associated with the reaction.
+    document: Document
+    # Products of the reaction; each product is a substance (contains at least one carbon), with yield details.
+    products: [ReactionProduct]
+    # Ordered stages capturing significant experimental events (participant additions, quench, pH changes, etc.).
+    stages: [ReactionStage]
+    #  Author-described experimental procedure text and related data.
+    procedure: ReactionProcedure
+    #  Reaction Materials and/or equipment noted by the author at stage-level significance (e.g., Dean–Stark, autoclave).
+    reactionMaterial: [ReactionMaterial]
+    #  Provided by primary source by author, small to large scale (e.g. milligram).
+    scaleDescription: String
+    # milligram (mg), gram (g), or kilogram (kg).
+    scaleValue: String
+    # Required reaction scheme representing products=reactants.
+    scheme: String!
+    # Notes about selectivity, named reactions, energy/techniques, or other controlled/free-form scope notes.
+    reactionNote: String
+    # Named transformation(s) assigned to the reaction (e.g., “Reduction of Nitro Compounds to Amines”).
+    transformations:[Transformation]
+    # Atom economy metric (value, unit, and derivation may be captured separately).
+    atomEconomy: String
+}
+
+# Describes classification of reaction based on nature of the change (e.g., oxidation, halogenation, etc.)
+type Transformation {
+    # Transformation identifier.
+    id: String
+    # SVG image for the transformation group.
+    svg: String
+    # Descriptive transformation group name.
+    name: ReactionTransformation
+}
+
+# Describes a distinct chemical reaction step with specific conditions.
+type ReactionStage {
+    # Stage order number (sequential, starting at 1).
+    stage: Int
+    # Participants in this stage: reactants, reagents, catalysts, solvents.
+    reactants: [ReactionParticipant]
+    # Participants in this stage: reactants, reagents, catalysts, solvents.
+    solvents: [ReactionParticipant]
+    # Participants in this stage: reactants, reagents, catalysts, solvents.
+    catalysts: [ReactionParticipant]
+    # Participants in this stage: reactants, reagents, catalysts, solvents.
+    reagents: [ReactionParticipant]
+    # Conditions (temperature, pressure, pH, duration) applied within this stage.
+    conditions: [Condition]
+}
+
+# Substances involved in the reaction (e.g., reactant, catalyst, etc.)
+type ReactionParticipant {
+    # Substance involved in the stage.
+    substance: Substance
+    # Auxiliary descriptor or textual modifier (AMD) describing a non-structurable derivative.
+    modifier: String
+}
+
+# Product of the reaction.
+type ReactionProduct {
+    # Display or reported yield value (percent; whole number, 0 < value ≤ 100).
+    yield: String
+    # Substance instance for the product (contains at least one carbon).
+    substance: ReactionParticipant
+}
+
+# Describes experimental parameters as described by the author in the original publication.
+type Condition {
+    # Order number of the condition within the stage (sequential, starting at 1).
+    ordinal: Int!
+    # pH value or range; numeric or shorthand (acidified/basified/neutralized).
+    ph: String
+    # Pressure value or range (e.g., atm, bar, psi).
+    pressure: String
+    # Temperature value or range (e.g., °C default; rt ≈ ambient).
+    temperature: String
+    # Duration value or range (e.g., h, min, s; “overnight” shorthand permissible).
+    duration: String
+}
+
+# The ordered steps associated with completing a chemical reaction.
+type ReactionProcedure {
+  #  Title or heading of the procedure segment.
+  title: String
+  #  Procedure text as described in the publication.
+  procedure: String
+  #  Free-form experimental data describing product characterization (e.g., NMR, LC-MS).
+  experimentalData: String
+  #  Steps as a part of a reaction procedure
+  procedureSteps: [ProcedureStep]
+  #  Characterization data for products (e.g., NMR entries).
+  characterizationData: [ProductCharacterization]
+  #  Safety notes provided by the author (e.g., pressure cautions, blast shield).
+  safetyInformation: [String]
+}
+# A discrete step within a procedure.
+type ProcedureStep {
+  #  Defines the order of the steps.
+  stepNumber: String
+  #  Detailed description of the step.
+  description: String
+}
+# Describes a measurement or analysis to validate the product of a reaction.
+type ProductCharacterization {
+  #  Substance to which the characterization applies.
+  substance: Substance
+  #  Characterization text (e.g., “1H NMR (500 MHz, CDCl3) …”).
+  text: String
+  #  Characterization type label (e.g., NMR, IR, MS).
+  type: String
+}
+# Describes equipment used in a procedure (e.g., glassware, labkits, etc.)
+type ReactionMaterial {
+  substance: Substance
+  concept: [Concept]
+  #  Item needed to conduct a test method (e.g. 10 mm test tube).
+  description: String
+}
+
+enum ReactionTransformation {
+    ACID_CATALYZED_REARRANGEMENT_OF_ALDEHYDES_AND_KETONES
+    ACYLACYLOXYLATION_AND_ACYLAMIDATION_OF_ALKENES
+    ACYLATION_AT_A_CARBON_BEARING_AN_ACTIVE_HYDROGEN
+    ACYLATION_AT_AN_ALIPHATIC_CARBON
+    ACYLATION_OF_ACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ACYLATION_OF_ALDEHYDES_AND_KETONES_WITH_ANHYDRIDES
+    ACYLATION_OF_AMIDES_BY_ACID_DERIVATIVES
+    ACYLATION_OF_AROMATIC_COMPOUNDS_WITH_NITRILES_HOUBEN_HOESCH_REACTION
+    ACYLATION_OF_AZIDES_WITH_ALDEHYDES
+    ACYLATION_OF_CARBOXYLIC_ACIDS_WITH_ACYL_HALIDES
+    ACYLATION_OF_CARBOXYLIC_ACIDS_WITH_CARBOXYLIC_ACIDS_OR_ESTERS
+    ACYLATION_OF_CARBOXYLIC_ESTERS_BY_CARBOXYLIC_ESTERS_CLAISEN_AND_DIECKMANN_CONDENSATIONS
+    ACYLATION_OF_DOUBLE_OR_TRIPLE_BONDS_BY_ALDEHYDES_FORMATES_AND_FORMAMIDES_STETTER_REACTION
+    ACYLATION_OF_KETONES_AND_NITRILES_BY_CARBOXYLIC_ESTERS_DICARBONATE_DERIVATIVES
+    ACYLATION_OF_NITROGEN_NUCLEOPHILES_BY_ACYL_THIOACYL_CARBAMOYL_HALIDES_AND_ANALOGS
+    ACYLATION_OF_NITROGEN_NUCLEOPHILES_BY_ANHYDRIDES_OR_DICARBONATES
+    ACYLATION_OF_NITROGEN_NUCLEOPHILES_BY_CARBOXYLIC_ACIDS
+    ACYLATION_OF_NITROGEN_NUCLEOPHILES_WITH_CARBOXYLIC_ESTERS_AND_ANALOGS
+    ACYLOIN_ESTER_CONDENSATION
+    ACYLOXYLATION_REACTION
+    ADDITION_OF_ACTIVE_HYDROGEN_COMPOUNDS_TO_CARBON_DIOXIDE_AND_CARBON_DISULFIDE
+    ADDITION_OF_ACYL_HALIDES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_ALCOHOLS_AND_PHENOLS_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_ALCOHOLS_AND_THIOLS_TO_ISOCYANATES_AND_ISOTHIOCYANATES
+    ADDITION_OF_ALCOHOLS_AND_THIOLS_TO_THIOALDEHYDES_AND_THIOKETONES
+    ADDITION_OF_ALCOHOLS_TO_ALDEHYDES_OR_KETONES_ACETALIZATION
+    ADDITION_OF_ALDEHYDES_TO_ALDEHYDES
+    ADDITION_OF_ALKANES_TO_ALKENES
+    ADDITION_OF_ALKENES_ALKYNES_TO_ALKENES_ALKYNES_NAZAROV_CYCLIZATION
+    ADDITION_OF_ALKYL_HALIDES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_ALLYLSILANES_OR_ALLYLSTANANES_TO_ALDEHYDES_KETONES_AND_IMINES_HOSOMI_SAKURAI_REACTION
+    ADDITION_OF_AMIDES_IMIDES_SULFONAMIDES_AND_CARBAMATES_TO_UNACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_AMIDES_THIOAMIDES_OR_SULFINAMIDE_TO_ALDEHYDES
+    ADDITION_OF_AMINES_PHOSPHINES_ASENINES_AND_ANALOGS_TO_UNACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_AMINES_TO_ALDEHYDES_KETONES_OR_THIOCARBONYLS
+    ADDITION_OF_AMINES_TO_CARBON_DIOXIDE_CARBON_DISULFIDE_OR_ANALOGS
+    ADDITION_OF_AMINES_TO_ISOCYANATES_ISOTHIOCYANATES
+    ADDITION_OF_AMMONIA_OR_AMINES_TO_NITRILES
+    ADDITION_OF_CARBENES_AND_CARBENOIDS_TO_DOUBLE_OR_TRIPLE_BONDS_CYCLOPROPANATION
+    ADDITION_OF_CARBENES_AND_DIAZOALKANES_TO_CARBON_NITROGEN_DOUBLE_BONDS_AZIRIDINATION
+    ADDITION_OF_CARBOXYLIC_AND_SULFONIC_ACIDS_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_CONJUGATED_ALKENES_TO_ALDEHYDES_BAYLIS_HILLMAN_REACTION
+    ADDITION_OF_GRIGNARD_ORGANOMETALLIC_REAGENTS_TO_ALDEHYDES_AND_KETONES
+    ADDITION_OF_GRIGNARD_REAGENTS_TO_NITRILES_AND_ISOCYANATES
+    ADDITION_OF_HALOGEN_AND_SULFUR_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HALOGEN_AZIDES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HALOGENS_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HCN_TO_CARBON_NITROGEN_DOUBLE_AND_CARBON_NITROGEN_TRIPLE_BONDS
+    ADDITION_OF_HETEROATOM_BEARING_CARBON_HYDROGEN_BOND_TO_UNACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HYDRAZINE_DERIVATIVES_TO_CARBONYL_COMPOUNDS
+    ADDITION_OF_HYDRAZOIC_ACID_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HYDROGEN_CYANIDE_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HYDROGEN_HALIDES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HYDROGEN_SULFIDE_AND_THIOLS_TO_UNACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_HYPOHALOUS_ACIDS_AND_HYPOHALITES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_METALLIC_REAGENTS_AND_ELECTROPHILES_TO_ALKYNES
+    ADDITION_OF_N_HALO_AMINES_AMIDES_TO_DOUBLE_BONDS
+    ADDITION_OF_NITROGEN_AND_SULFUR_TO_DOUBLE_BONDS_AMINOSULFENYLATION
+    ADDITION_OF_NITROSYL_AND_NITRYL_HALIDES_TO_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_ORGANOMETALLIC_COMPOUNDS_TO_CARBON_DIOXIDE_CARBON_DISULFIDE_OR_ANALOGS
+    ADDITION_OF_ORGANOMETALLIC_COMPOUNDS_TO_CARBON_NITROGEN_DOUBLE_BOND
+    ADDITION_OF_ORGANOMETALLICS_TO_UNACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ADDITION_OF_OXYGEN_AND_SULFUR_TO_DOUBLE_BONDS_HYDROXYSULFENYLATION
+    ADDITION_OF_SILANES_TO_ALDEHYDES_ACETALS_OR_IMINES
+    ADDITION_OF_SULFUR_NUCLEOPHILES_TO_ALDEHYDES_KETONES_OR_ACETALS
+    ADDITION_OF_WATER_TO_ISOCYANIDES
+    ALCOHOLYSIS_OF_ACYL_HALIDES_AND_ANALOGS
+    ALCOHOLYSIS_OF_AMIDES
+    ALCOHOLYSIS_OF_ANHYDRIDES
+    ALCOHOLYSIS_OF_NITRILES_PINNER_SYNTHESIS
+    ALDOL_REACTION
+    ALDOL_TYPE_REACTIONS_BETWEEN_CARBOXYLIC_ACID_DERIVATIVES_OR_COMPOUNDS_WITH_ACTIVE_HYDROGEN_AND_ALDEHYDES_KETONES_THIOKETONES_OR_ALDIMINES
+    ALIPHATIC_DIAZONIUM_COUPLING
+    ALIPHATIC_HALIDE_EXCHANGE
+    ALKALI_FUSION_OF_SULFONATE_SALTS
+    ALKYLATION_AND_ARYLATION_OF_AROMATIC_COMPOUNDS_BY_PEROXIDES
+    ALKYLATION_AND_ARYLATION_OF_AROMATIC_COMPOUNDS_ZIEGLER_ALKYLATION
+    ALKYLATION_AT_A_CARBON_BEARING_AN_ACTIVE_HYDROGEN
+    ALKYLATION_AT_A_POSITION_ALPHA_TO_A_HETEROATOM
+    ALKYLATION_OF_ALCOHOL_WITH_DIAZO_COMPOUNDS
+    ALKYLATION_OF_ALCOHOL_WITH_ONIUM_SALTS
+    ALKYLATION_OF_ALKANES
+    ALKYLATION_OF_AMINES_WITH_DIAZO_COMPOUNDS
+    ALKYLATION_OR_SILYLATION_OF_ALCOHOL_WITH_INORGANIC_ORGANIC_ESTERS
+    ALKYLATION_SILYLATION_AT_AN_ALKYNYL_CARBON
+    ALKYLATION_SILYLATION_OF_AMINES_AND_PHOSPHINES
+    ALKYLATION_SILYLATION_OF_OXIMES
+    ALKYLATION_WITH_ALKYL_HALIDES_WILLIAMSON_ETHER_SYNTHESIS
+    ALKYLATION_WITH_TRIALKYLBORANES
+    ALL_CARBON_THREE_PLUS_TWO_CYCLOADDITION
+    ALLYLIC_BENZYLIC_AND_VINYLIC_HALOGENATIONS_WOHL_ZIEGLER_REACTION
+    AMIDATION_AND_AMINATION_AT_AN_ALKYL_CARBON
+    AMIDATION_OF_AROMATIC_COMPOUNDS_WITH_ISOCYANATE
+    AMINATION_AT_AN_ACTIVATED_CARBON
+    AMINATION_OF_ALKANES
+    AMINATION_OF_AROMATIC_COMPOUNDS
+    AMINATION_OF_AROMATIC_NITROGEN_HETEROCYCLES_CHICHIBABIN_REACTION
+    AMINATION_OF_OXETANES
+    AMINO_ALKOXY_CARBONYLATION_OF_DOUBLE_OR_TRIPLE_BONDS_PAUSON_KHAND_REACTION
+    AMINOALKYLATION_AND_AMIDOALKYLATION_OF_AROMATIC_COMPOUNDS
+    ARBUZOV_REACTION
+    ARNDT_EISTERT_SYNTHESIS_WOLFF_REARRANGEMENT
+    AROMATIC_DIAZONIUM_COUPLING_AZO_COUPLING
+    AROMATIC_HALOGEN_EXCHANGE
+    AROMATIC_SUBSTITUTION_BY_OXYGEN_NUCLEOPHILES
+    AROMATIC_SUBSTITUTION_BY_SULFUR_NUCLEOPHILES
+    AROMATIZATION_OF_SIX_MEMBERED_RINGS
+    ARYL_ALKYNE_COUPLING_STEPHENS_CASTRO_COUPLING_SONOGASHIRA_COUPLING
+    ARYLATION_AND_ALKYLATION_OF_ALKENES_HECK_REACTION
+    ARYLATION_AND_ALKYLATION_OF_ALKENES_STILLE_COUPLING
+    ARYLATION_AT_A_CARBON_CONTAINING_AN_ACTIVE_HYDROGEN_HURTLEY_REACTION
+    ARYLATION_OF_ACTIVATED_ALKENES_BY_DIAZONIUM_SALTS_MEERWEIN_ARYLATION
+    ARYLATION_OF_AROMATIC_COMPOUNDS_BY_DIAZONIUM_SALTS_GOMBERG_BACHMANN_REACTION
+    ARYLATION_OF_AROMATIC_COMPOUNDS_BY_METALATED_ARYLS
+    ARYLATION_OF_SILANES
+    AZIRIDINATION_OF_ALKENES
+    AZIRIDINATION_OF_IMINES
+    BAEYER_VILLIGER_REARRANGEMENT
+    BECKMANN_REARRANGEMENT
+    BENZIDINE_REARRANGEMENT
+    BENZIL_BENZILIC_ACID_REARRANGEMENT
+    BENZOIN_CONDENSATION
+    BIMOLECULAR_REDUCTION_OF_ALDEHYDES__OR_CHALCOGEN_COUNTERPARTS_TO_ALKENES_MCMURRY_REACTION
+    BIMOLECULAR_REDUCTION_OF_ALDEHYDES_AND_KETONES_TO_ONE_TWO_DIOLS_AND_IMINES_TO_ONE_TWO_DIAMINES
+    BISDECARBOXYLATION
+    BRUYLANTS_REACTION
+    BUCHERER_REACTION
+    C_ACYLATION_OF_CARBOXYLIC_ACID_SALTS
+    C_ALKYLATION_OF_CARBOXYLIC_ACID_SALTS
+    C_ALKYLATION_OF_DIHYDRO_1_3_OXAZINE_AND_OXAZOLINES_MEYERS_SYNTHESIS
+    C_ALKYLATION_OF_KETONES_ALDEHYDES_NITRILES_AND_CARBOXYLIC_ESTERS
+    CADIOT_CHODKIEWICZ_ALKYNE_COUPLING_EGLINTON_GLASER_OR_HAY_REACTIONS
+    CANNIZZARO_REACTION
+    CARBENE_INSERTION
+    CARBOCYCLIZATION
+    CARBON_CARBON_COUPLING_AT_A_SUSCEPTIBLE_CARBON
+    CARBON_CARBON_COUPLING_OF_BORANES
+    CARBON_CARBON_COUPLING_OF_GRIGNARD_REAGENTS
+    CARBON_CARBON_COUPLING_OF_ORGANOMETALLIC_REAGENTS
+    CARBON_CARBON_COUPLING_WITH_SILANES
+    CARBONYLATION_OF_ALKYL_HALIDES_ALCOHOLS_OR_ALKANES
+    CARBONYLATION_OF_ARYL_SUBSTRATES_TO_FORM_CARBONYL_COMPOUNDS
+    CARBOXYLATION_OF_AROMATIC_COMPOUNDS_WITH_CARBON_DIOXIDE_KOLBE_SCHMITT_REACTION
+    CARBOXYLATION_OF_AROMATIC_COMPOUNDS_WITH_CARBONYL_HALIDES
+    CHAPMAN_REARRANGEMENT
+    CHIRAL_RESOLUTION
+    CHLOROSULFONATION_AND_CHLOROSULFENATION_REED_REACTION
+    CHUGAEV_REACTION
+    CLAISEN_REARRANGEMENT_AND_VARIATIONS
+    CLEAVAGE_OF_ALKANES
+    CLEAVAGE_OF_ALKOXIDES
+    CLEAVAGE_OF_AMINE_OXIDES_COPE_ELIMINATION
+    CLEAVAGE_OF_BETA_KETO_ESTERS_AND_BETA_DIKETONES
+    CLEAVAGE_OF_CARBOXYLIC_ESTERS_WITH_METAL_HALIDES
+    CLEAVAGE_OF_CYCLIC_THIONOCARBONATES_AND_ANALOGS_TO_ALKENE_COREY_WINTER_REACTION
+    CLEAVAGE_OF_ETHERS_TO_ALKENES
+    CLEAVAGE_OF_ETHERS_WITH_ANHYDRIDES
+    CLEAVAGE_OF_NONENOLIZABLE_KETONES
+    CLEAVAGE_OF_PHOSPHORUS_OXYGEN_SINGLE_PHOSPHORUS_NITROGEN_SINGLE_AND_PHOSPHORUS_NITROGEN_DOUBLE_BONDS
+    CLEAVAGE_OF_QUATERNARY_AMMONIUM_SALTS_HOFMANN_DEGRADATION
+    CLEAVAGE_OF_SULFOXIDES_SULFONES_AND_SELENOXIDES
+    CONDENSATION_REACTION_BETWEEN_COMPOUNDS_WITH_ACTIVE_HYDROGEN_AND_ALDEHYDES_OR_KETONES_KNOEVENAGEL_REACTION
+    CONJUGATE_ADDITION_OF_BORANES_TO_ACTIVATED_DOUBLE_BONDS
+    CONJUGATE_ADDITION_OF_HETEROATOM_NUCLEOPHILES_TO_ACTIVATED_ALKENES_OR_ALKYNES
+    CONVERSION_FROM_ONE_AROMATIC_COMPOUND_TO_ANOTHER
+    CONVERSION_OF_ALCOHOLS_TO_ETHER_MITSUNOBU_ETHERIFICATION
+    CONVERSION_OF_ALDEHYDES_OR_CARBOXYLIC_ACIDS_TO_NITRILES
+    CONVERSION_OF_ALDEHYDES_TO_BETA_KETO_ESTERS_OR_KETONES
+    CONVERSION_OF_ALKENES_TO_ALKYNES
+    CONVERSION_OF_AMIDES_TO_ALPHA_AZIDO_AMIDES
+    CONVERSION_OF_AMINES_TO_HALIDES
+    CONVERSION_OF_AROMATIC_AMINES_TO_AZO_COMPOUNDS_MILLS_REACTION
+    CONVERSION_OF_AZIRIDINES_TO_ALKENES
+    CONVERSION_OF_CARBOXYLIC_ACID_SALTS_TO_KETONES_WITH_ORGANOMETALLIC_COMPOUNDS
+    CONVERSION_OF_CARBOXYLIC_ACID_SALTS_TO_NITRILES
+    CONVERSION_OF_CARBOXYLIC_DERIVATIVES_TO_KETONES_OR_ALCOHOLS_WITH_ORGANOMETALLIC_COMPOUNDS
+    CONVERSION_OF_DIAZO_KETONES_TO_ALPHA_HALO_KETONES
+    CONVERSION_OF_DIAZONIUM_SALTS_TO_CARBONYL_COMPOUNDS
+    CONVERSION_OF_ENOLATES_TO_SILYL_ENOL_ETHERS_ENOL_ESTERS_OR_ENOL_SULFONATE_ESTERS
+    CONVERSION_OF_EPOXIDES_AND_EPISULFIDES_TO_ALKENES
+    CONVERSION_OF_HYDRAZINES_TO_AZIDES
+    CONVERSION_OF_NITROSO_COMPOUNDS_TO_AZOXY_COMPOUNDS
+    CONVERSION_OF_ORGANOMETALLIC_COMPOUNDS_TO_AMINES
+    CONVERSION_OF_ORGANOMETALLIC_COMPOUNDS_TO_KETONES_ALDEHYDES_CARBOXYLIC_ESTERS_OR_AMIDES
+    CONVERSION_OF_ORGANOMETALLIC_COMPOUNDS_TO_SULFUR_COMPOUNDS
+    CONVERSION_OF_SULFIDES_TO_ORGANOLITHIUM_COMPOUNDS
+    CONVERSION_OF_TERTIARY_AMINES_TO_CYANAMIDES_VON_BRAUN_REACTION
+    COORDINATION_OF_A_METAL_TO_CARBON_AND_HETEROATOM
+    COPE_REARRANGMENT
+    COUPLING_INVOLVING_ALCOHOLS
+    COUPLING_OF_ACYL_HALIDES_TO_ONE_TWO_DIKETONES
+    COUPLING_OF_ALKYL_SILYL_HALIDES_WURTZ_REACTION_NEGISHI_COUPLING
+    COUPLING_OF_ARYL_AND_ALKYL_ORGANOMETALLIC_COMPOUNDS_WITH_ARYL_HALIDES_ETHERS_AND_CARBOXYLIC_ESTERS
+    COUPLING_OF_ARYL_COMPOUNDS_WITH_ARYLBORONIC_ACID_DERIVATIVES_SUZUKI_COUPLING
+    COUPLING_OF_ARYL_HALIDES_ULLMANN_REACTION
+    COUPLING_OF_ORGANOMETALLIC_REAGENTS_WITH_CARBOXYLIC_ESTERS
+    COUPLING_OF_ORGANOMETALLIC_REAGENTS_WITH_ESTERS_OF_SULFATES_SULFOXIDES_SULFONES_ACETALS_NITRO_COMPOUNDS
+    COUPLING_OF_ORGANOMETALLICS_WITH_ACETALS_ORTHOESTERS
+    CURTIUS_REARRANGEMENT
+    CYANATION_OF_AROMATIC_COMPOUNDS
+    CYANATION_OF_AROMATIC_RINGS_ROSENMUND_VON_BRAUN_REACTION
+    CYANATION_OF_CARBON_ALPHA_TO_HETEROATOMS_OR_CARBONYL_COMPOUNDS
+    CYANO_DEMETALLATION
+    CYCLOADDITIONS_OF_ALKENES_AND_ALKYNES_OTHER_THAN_FOUR_PLUS_TWO_THREE_PLUS_TWO_OR_TWO_PLUS_TWO
+    CYCLODEHYDRATION_OF_CARBONYL_CONTAINING_COMPOUNDS_PICTET_SPENGLER_REACTIONS
+    CYCLOTRIMERIZATION_AND_CYCLOTETRAMERIZATION_OF_ALKYNES
+    DARZENS_GLYCIDIC_ESTER_CONDENSATION
+    DEALKOXYLATION_OF_ACETALS_ORTHOESTERS_AND_ETHERS
+    DECARBONYLATION_OF_ACYL_HALIDES_TO_ALKENES
+    DECARBONYLATION_OF_ALDEHYDES_AND_ACYL_HALIDES
+    DECARBONYLATION_OF_AROMATIC_ALDEHYDES
+    DECARBOXYLATION_OF_ALIPHATIC_ACIDS
+    DECARBOXYLATION_OF_AROMATIC_ACIDS
+    DECARBOXYLATION_OF_BETA_HYDROXY_CARBOXYLIC_ACIDS_OR_BETA_LACTONES
+    DECARBOXYLATIVE_ALKYLATION_ACYLATION_AND_CARBALKOXYLATION_OF_NITROGEN_HETEROCYCLE
+    DECARBOXYLATIVE_ALLYLATION
+    DECARBOXYLATIVE_DIMERIZATION_KOLBE_ELECTROSYNTHESIS
+    DECARBOXYLATIVE_HALOGENATION_OF_CARBOXYLIC_ACIDS
+    DECOMPOSITION_OF_SULFONYLHYDRAZONES_TO_ALKENES_SHAPIRO_REACTION_BAMFORD_STEVENS_REACTION
+    DECYANATION
+    DEHALOGENATION_OF_ALPHA_HALO_ACYL_HALIDES_TO_KETENES
+    DEHALOGENATION_OF_AROMATIC_COMPOUNDS
+    DEHALOGENATION_OF_VICINAL_DIHALIDES
+    DEHYDRATION_OF_N_ALKYLFORMAMIDES_TO_ISONITRILES
+    DEHYDRATION_OF_OXIMES_AND_SIMILAR_COMPOUNDS_TO_NITRILES
+    DEHYDRATION_OF_THIO_AMIDES_TO_NITRILES_VON_BRAUN_REACTION
+    DEHYDROGENATION_OF_AMINES_TO_NITRILES_OR_IMINES
+    DEHYDROGENATIONS_YIELDING_CARBON_CARBON_DOUBLE_BONDS
+    DEHYDROHALOGENATION_OF_ACYL_HALIDES_OR_SULFONYL_HALIDES
+    DEHYDROHALOGENATION_OF_ALKYL_HALIDES
+    DEOXYGENATION_OF_AROMATIC_COMPOUNDS
+    DEOXYGENATION_OF_VICINAL_DIOLS
+    DESULFONATION_OF_AROMATIC_COMPOUNDS
+    DESULFURIZATION_DESELENIZATION_OR_DETELLURATION_REACTION
+    DESULFURIZATION_REACTION
+    DEUTERIATION_OR_TRITIATION_REACTION
+    DI_PI_METHANE_AND_RELATED_REARRANGEMENTS
+    DIAMINATION_OF_ALKENES
+    DIAZO_TRANSFER_REACTION
+    DIAZONIATION_OF_AROMATIC_COMPOUNDS
+    DIAZOTIZATION
+    DIELS_ALDER_REACTION_AND_RETRO_DIELS_ALDER_REACTION
+    DIENONE_PHENOL_REARRANGEMENT
+    DIHYDROXYLATION_OF_ALKENES__SHARPLESS_ASYMMETRIC_DIHYDROXYLATION
+    DIHYDROXYLATION_OF_AROMATIC_RINGS
+    DIMERIZATION_OF_DIAZONIUM_SALTS
+    DIMERIZATION_OF_ENOLATES_OR_SILYL_ENOL_ETHERS_TO_ONE_FOUR_CARBONYLS
+    DIRECT_CONVERSION_OF_ALDEHYDES_TO_AMIDES
+    DIRECT_CONVERSION_OF_ALKYL_HALIDES_TO_ALDEHYDES_AND_KETONES
+    DYOTROPIC_REARRANGEMENTS_BROOK_REARRANGEMENT
+    ELECTROCYCLIC_REARRANGEMENTS_OF_CYCLOBUTENES_AND_ONE_THREE_CYCLOHEXADIENES
+    ELIMINATION_OF_A_HALOGEN_AND_A_HETERO_GROUP_BOORD_REACTION
+    ELIMINATION_OF_BORANES
+    ELIMINATION_OF_CARBON_MONOXIDE_AND_CARBON_DIOXIDE_FROM_BRIDGED_BICYCLIC_KETONES_AND_LACTONES
+    ELIMINATION_OF_N_NITROSAMINES_TO_DIAZOALKANES
+    ELIMINATION_OF_SULFONATES_TO_ALKENES
+    ENE_REACTION
+    EPOXIDATION_OF_ALDEHYDES_AND_KETONES
+    EPOXIDATION_OF_ALKENES
+    EPOXIDE_FORMATION_INTRAMOLECULAR_WILLIAMSON_ETHER_SYNTHESIS
+    ESTERIFICATION_OF_CARBOXYLIC_ACIDS
+    EXPANSION_AND_CONTRACTION_OF_RING_DEMJANOV_RING_CONTRACTION_AND_EXPANSION
+    EXTRUSION_OF_CARBON_MONOXIDE_OR_CARBON_DIOXIDE_FROM_CYCLIC_KETONES_OR_LACTONES
+    EXTRUSION_OF_NITROGEN_FROM_PYRAZOLINES_PYRAZOLES_AND_TRIAZOLINES
+    EXTRUSION_OF_SULFUR_DIOXIDE_FROM_CYCLIC_SULFONES
+    FAVORSKII_REARRANGEMENT
+    FISCHER_INDOLE_SYNTHESIS
+    FORMATION_OF_ACIDS_BASES_SALTS_AND_HYBRID_INORGANIC_ORGANIC_MATERIALS
+    FORMATION_OF_ACYL_HALIDES_FROM_ACID_DERIVATIVES
+    FORMATION_OF_ACYL_HALIDES_FROM_CARBOXYLIC_ACIDS
+    FORMATION_OF_ALCOHOLS_FROM_ALKENES_HYDRATION_OR_HYDROBORATION
+    FORMATION_OF_ALCOHOLS_FROM_AMINES
+    FORMATION_OF_ALKENES_BY_TWOFOLD_EXTRUSION
+    FORMATION_OF_ALKYL_HALIDES_ALCOHOLS_FROM_ETHERS_AND_SILYL_ETHERS
+    FORMATION_OF_ALKYL_HALIDES_FROM_ALCOHOLS
+    FORMATION_OF_ALKYL_HALIDES_FROM_SULFURIC_SULFONIC_ACID_ESTERS
+    FORMATION_OF_AZIDES
+    FORMATION_OF_AZIRIDINES_FROM_EPOXIDES
+    FORMATION_OF_AZOXY_COMPOUNDS
+    FORMATION_OF_BETA_LACTAMS
+    FORMATION_OF_BETA_LACTONES_AND_OXETANES_PATERNO_BUCHI_REACTION
+    FORMATION_OF_BISULFITES_FROM_ALDEHYDES_KETONES_AND_ISOCYANATES
+    FORMATION_OF_BUNTE_SALTS
+    FORMATION_OF_CARBODIIMIDES
+    FORMATION_OF_CARBON_CARBON_DOUBLE_BOND_FROM_ALCOHOLS_VIA_DEHYDRATION
+    FORMATION_OF_CARBONATES_AND_XANTHATES
+    FORMATION_OF_CHALCOGEN_PHOSPHORUS_OR_NITROGEN_PHOSPHORUS_COMPOUNDS
+    FORMATION_OF_CYANOHYDRINS_STRECKER_SYNTHESIS
+    FORMATION_OF_CYCLIC_ETHERS
+    FORMATION_OF_DISULFIDE_DISELENIDE_DITELLURIDE_THROUGH_ALKYLATION
+    FORMATION_OF_EPISULFIDES_AND_EPISULFONES
+    FORMATION_OF_GAMMA_LACTONES_FROM_ALKENES
+    FORMATION_OF_GEM_DIHALIDES_FROM_ALDEHYDES_AND_KETONES
+    FORMATION_OF_HALOHYDRINS_TWO_HALO_ESTERS_FROM_EPOXIDES
+    FORMATION_OF_HYDROPEROXIDES_AUTOXIDATION
+    FORMATION_OF_ISOCYANATES_ISOTHIOCYANATES
+    FORMATION_OF_ISOCYANIDES_ISONITRILES
+    FORMATION_OF_METALATED_ALDIMINES
+    FORMATION_OF_N_O_S_HETEROCYCLES
+    FORMATION_OF_NITRO_COMPOUNDS_FROM_HALIDES
+    FORMATION_OF_NITROGEN_HETEROCYCLES
+    FORMATION_OF_ORGANOMETALLIC_COMPOUNDS_FROM_HALOARENES
+    FORMATION_OF_OXIMES
+    FORMATION_OF_OXONIUM_SALTS
+    FORMATION_OF_OXYGEN_HETEROCYCLES
+    FORMATION_OF_PEROXIDES
+    FORMATION_OF_SULFONAMIDES
+    FORMATION_OF_SULFONIC_ESTERS
+    FORMATION_OF_SULFONYL_HALIDES
+    FORMATION_OF_SULFUR_HETEROCYCLES
+    FORMATION_OF_THIOETHERS_EPISULFIDES_SULFONIUM_SALTS_SELENIDES
+    FORMATION_OF_THIOLS
+    FORMYLATION_OF_AROMATIC_COMPOUNDS_GATTERMAN_KOCH_VILSMEIER_HAACK_RIEMER_TIEMANN_DUFF_GROSS_REACTION
+    FRAGMENTATION_OF_ALPHA_BETA_EPOXY_HYDRAZONES_ESCHENMOSER_TANABE_RING_CLEAVAGE
+    FRIEDEL_CRAFTS_ACYLATION
+    FRIEDEL_CRAFTS_ALKYLATION
+    FRIEDEL_CRAFTS_ARYLATION_SCHOLL_REACTIONS
+    FRIES_REARRANGEMENT
+    HALLER_BAUER_REACTION
+    HALO_DEMETALLATION
+    HALOALKYLATION_OF_AROMATIC_COMPOUNDS
+    HALOFORM_REACTION
+    HALOGEN_METAL_EXCHANGE
+    HALOGENATION_AT_AN_ALKYL_CARBON
+    HALOGENATION_AT_SILICON
+    HALOGENATION_OF_ALDEHYDES_AND_KETONES
+    HALOGENATION_OF_ALDEHYDES_TO_FORM_ACYL_HALIDES
+    HALOGENATION_OF_AROMATIC_COMPOUNDS
+    HALOGENATION_OF_CARBOXYLIC_ACIDS_AND_ACYL_HALIDES
+    HALOGENATION_OF_SULFOXIDES_AND_SULFONES
+    HALOLACTONIZATION_AND_HALOLACTAMIZATION
+    HALOSULFONATION_OF_AROMATIC_COMPOUNDS
+    HENRY_REACTION__KAMLET_REACTION
+    HETERO_DIELS_ALDER_REACTION_AND_RETRO_HETERO_DIELS_ALDER_REACTION
+    HOFMANN_LOFFLER_REACTION_AND_BARTON_REACTION
+    HOFMANN_REARRANGEMENT
+    HOMOLOGATION_OF_ALDEHYDES_AND_KETONES_METHYLENE_INSERTION
+    HUNSDIECKER_REACTION_SIMONINI_REACTION
+    HYDRATION_OF_ALDEHYDES_OR_KETONES
+    HYDRATION_OF_TRIPLE_BONDS
+    HYDROBORATION_OF_DOUBLE_OR_TRIPLE_BONDS
+    HYDROCARBOXYLATION_KOCH_REACTION_AND_REPPE_CARBONYLATION
+    HYDROFORMYLATION
+    HYDROGENOLYSIS_OF_CARBONATES_THIOCARBONATES_BARTON_MCCOMBIE_REACTION
+    HYDROGENOLYSIS_OF_NITRILES_DECYANATION
+    HYDROLYSIS_OF_ACETALS_ORTHOESTERS_ENOL_ETHERS_AND_SIMILAR_COMPOUNDS
+    HYDROLYSIS_OF_ACYL_HALIDES
+    HYDROLYSIS_OF_ALIPHATIC_NITRO_COMPOUNDS_NEF_REACTION
+    HYDROLYSIS_OF_ALKYL_ESTERS_OF_INORGANIC_ACIDS
+    HYDROLYSIS_OF_ALKYL_SILYL_IMIDOYL_HALIDES
+    HYDROLYSIS_OF_ANHYDRIDES
+    HYDROLYSIS_OF_AROMATIC_ORGANOMETALLIC_COMPOUNDS
+    HYDROLYSIS_OF_DIAZOKETONES
+    HYDROLYSIS_OF_EPOXIDES
+    HYDROLYSIS_OF_GEM_DIHALIDES_DIHALIDE_BORANES
+    HYDROLYSIS_OF_NITRILES
+    HYDROLYSIS_OF_ONE_ONE_ONE_TRIHALIDES
+    HYDROLYSIS_OF_SULFONIC_ACID_DERIVATIVES
+    HYDROLYSIS_OF_THE_CARBON_NITROGEN_DOUBLE_BOND_AND_ENAMINES
+    HYDROLYSIS_OR_HYDROGENOLYSIS_OF_AMIDES_IMIDES_CARBAMATES
+    HYDROLYSIS_OR_HYDROGENOLYSIS_OF_CARBOXYLIC_ESTERS_OR_THIOESTERS
+    HYDROMETALLATION_OF_ALKENES_OR_ALKYNES
+    HYDROSILYLATION_OF_ALKENES_OR_ALKYNES
+    HYDROXYALKYLATION_OF_AROMATIC_COMPOUNDS
+    HYDROXYLATION_AT_AN_ALIPHATIC_CARBON
+    HYDROXYLATION_AT_AN_AROMATIC_CARBON
+    HYDROXYLATION_OF_AROMATIC_COMPOUNDS
+    HYDROXYLATION_OF_AROMATIC_HALIDES
+    HYDROXYLATION_OF_ARYLDIAZONIUM_SALTS
+    HYDROXYLATION_OF_SILANES_FLEMING_TAMAO_OXIDATION
+    ISOMERIZATION_MIGRATION_OF_DOUBLE_OR_TRIPLE_BONDS_AND_ONE_J_SIGMATROPIC_REARRANGEMENT_OF_HYDROGEN
+    JACOBSEN_REACTION
+    KETO_ENOL_TAUTOMERIZATION
+    KETONIC_DECARBOXYLATION_OF_CARBOXYLIC_ACIDS_RUZICKA_CYCLIZATION
+    LIGAND_SUBSTITUTION
+    LOSSEN_REARRANGEMENT
+    MANNICH_REACTION_MANNICH_TYPE_REACTIONS_BIGINELLI_CONDENSATION
+    METAL_EXCHANGE
+    METALLATION_OF_CARBON_HYDROGEN_BOND_WITH_METALS_OR_ORGANOMETALLIC_COMPOUNDS
+    METATHESIS_OF_ALKENES_OR_ALKYNES
+    METHYLATION_VINYLATION_AND_ARYLATION_OF_DIAZONIUM_SALTS
+    MICHAEL_ADDITION_AND_RETRO_MICHAEL_REACTIONS
+    MIGRATION_OF_AN_ALKYL_GROUP
+    MIGRATION_OF_AN_ARYLAZO_GROUP
+    MIGRATION_OF_BORON
+    MIGRATION_OF_HALOGEN_HYDROXYL_AND_AMINO_GROUPS
+    MIGRATION_OF_HALOGENS_ORTON_REARRANGEMENT
+    MIGRATION_OF_THE_N_NITRO_GROUP
+    MIGRATION_OF_THE_N_NITROSO_GROUP_FISCHER_HEPP_REARRANGEMENT
+    MIGRATORY_INSERTION
+    MUKAIYAMA_ALDOL_AND_RELATED_REACTIONS
+    N_ALKYLATION_OF_AMIDES_IMIDES_OR_MITSUNOBU_REACTION
+    N_DEALKYLATION_OF_AMINES_AMIDES_AND_SULFOAMIDES
+    N_HALOGENATION
+    N_NITROSATION_N_NITRATION
+    NEBER_REARRANGEMENT
+    NITRATION_OF_ALKANES
+    NITRATION_OF_AROMATIC_COMPOUNDS
+    NITRENE_INSERTION
+    NITRO_HUNSDIECKER_REACTION
+    NITROSATION_AT_A_CARBON_BEARING_AN_ACTIVE_HYDROGEN
+    NITROSATION_OF_AROMATIC_COMPOUNDS
+    O_ALKYLATION_OF_CARBOXYLIC_ACID_SALTS
+    O_ALKYLATION_OF_CARBOXYLIC_ACIDS_AMIDES_WITH_DIAZO_COMPOUNDS
+    ONE_FOUR_ADDITION_OF_ORGANOMETALLIC_COMPOUNDS_OR_CARBON_RADICALS_TO_ACTIVATED_DOUBLE_OR_TRIPLE_BONDS
+    ONE_J_SIGMATROPIC_MIGRATIONS_OF_CARBON_VINYLCYCLOPROPANE_REARRANGEMENT
+    ONE_THREE_DIPOLAR_ADDITION
+    ONE_THREE_FRAGMENTATION_OF_GAMMA_AMINO_HYDROXY_HALIDES_AND_ONE_THREE_DIOLS
+    OXIDATION_OF_ALDEHYDES_TO_CARBOXYLIC_ACIDS
+    OXIDATION_OF_ALKENES_TO_ALDEHYDES_AND_KETONES_WACKER_PROCESS
+    OXIDATION_OF_ALKYNES_TO_ALPHA_DIKETONES
+    OXIDATION_OF_AMINES_OR_NITRO_COMPOUNDS_TO_ALDEHYDES_KETONES_OR_DIHALIDES
+    OXIDATION_OF_AMINES_TO_NITROSO_COMPOUNDS_HYDROXYLAMINES_AND_RELATED
+    OXIDATION_OF_AROMATIC_HYDROCARBONS_TO_QUINONES
+    OXIDATION_OF_AROMATIC_SIDE_CHAINS_DAKIN_REACTION
+    OXIDATION_OF_ARYLMETHANES_TO_ALDEHYDES_ETARD_REACTION
+    OXIDATION_OF_CARBOXYLIC_ACIDS_TO_PEROXY_ACIDS
+    OXIDATION_OF_FISHER_CARBENE_COMPLEXES_TO_ESTERS
+    OXIDATION_OF_HYDRAZINES_HYDRAZONES_AND_HYDROXYLAMINES
+    OXIDATION_OF_IMINES_TO_OXAZIRIDINES
+    OXIDATION_OF_METHYL_METHYLENE_TO_CARBONYL
+    OXIDATION_OF_METHYLENE_TO_ALCOHOLS_ESTERS_OR_ETHERS
+    OXIDATION_OF_METHYLENE_TO_HETEROATOM_FUNCTIONAL_GROUPS_OTHER_THAN_OXYGEN_OR_CARBONYL
+    OXIDATION_OF_PHENOLS_AND_AROMATIC_AMINES_TO_QUINONES
+    OXIDATION_OF_PRIMARY_ALCOHOLS_TO_CARBOXYLIC_ACIDS_OR_CARBOXYLIC_ESTERS
+    OXIDATION_OF_PRIMARY_AMINES_OXIMES_AZIDES_ISOCYANATES_ISOCYANATE_ANALOGS_OR_NITROSO_TO_NITRO_COMPOUNDS
+    OXIDATION_OF_PRIMARY_HALIDES_ESTERS_OF_PRIMARY_ALCOHOLS_EPOXIDES_TO_ALDEHYDES_HYDROXY_KETONE
+    OXIDATION_OF_TERTIARY_AMINES
+    OXIDATION_OF_THIOETHERS_TO_SULFOXIDES_AND_SULFONES
+    OXIDATION_OF_THIOLS_AND_OTHER_SULFUR_COMPOUNDS_TO_SULFONIC_ACIDS
+    OXIDATION_OF_THIOLS_TO_DISULFIDES
+    OXIDATION_OF_TRIALKYLBORANES_TO_BORATES_AND_ALCOHOLS
+    OXIDATION_OR_DEHYDROGENATION_OF_ALCOHOLS_TO_ALDEHYDES_AND_KETONES
+    OXIDATIVE_CLEAVAGE_OF_DOUBLE_BONDS_AND_AROMATIC_RINGS
+    OXIDATIVE_CLEAVAGE_OF_GLYCOLS_AND_RELATED_COMPOUNDS
+    OXIDATIVE_CLEAVAGE_OF_KETONES_ALDEHYDES_AND_ALCOHOLS
+    OXIDATIVE_COUPLING_INVOLVING_CARBANIONS
+    OXIDATIVE_DECARBOXYLATION
+    OXYAMINATION_OF_ALKENES_SHARPLESS_ASYMMETRIC_AMINOHYDROXYLATION
+    OXYGENATION_OF_ORGANOMETALLIC_COMPOUNDS_AND_VINYL_IODONIUM_SALTS_TO_FORM_O_ESTERS_AND_RELATED_SUBSTRATES
+    OZONOLYSIS
+    PASSERINI_AND_UGI_REACTIONS
+    PERKIN_REACTION
+    PETERSON_OLEFINATION
+    PHOTOCHEMICAL_ARYLATION_OF_AROMATIC_COMPOUNDS
+    PHOTOOXIDATION_OF_DIENES
+    PINACOL_REARRANGEMENT
+    PREPARATION_OF_ACYL_CYANIDES
+    PREPARATION_OF_ALCOHOLS_FROM_BORANES
+    PREPARATION_OF_ALDEHYDES_AND_CARBOXYLIC_ACIDS_FROM_BORANES
+    PREPARATION_OF_ALKENES_FROM_VINYLIC_BORANES
+    PREPARATION_OF_ALKYNES_ALKENES_AND_KETONES_FROM_BORANES_AND_ACETYLIDES
+    PREPARATION_OF_BORATES_AND_BORONIC_ACIDS
+    PREPARATION_OF_DIAZO_KETONES
+    PREPARATION_OF_INORGANIC_ESTERS_FROM_ALCOHOLS
+    PREPARATION_OF_MIXED_ORGANIC_INORGANIC_ANHYDRIDES
+    PREPARATION_OF_NITRILES_FROM_CYANIDES
+    PREPARATION_OF_PEROXIDES_AND_HYDROPEROXIDES
+    PREPARATION_OF_SULFONES
+    PREPARATION_OF_THIOL_ACIDS_AND_THIOL_ESTERS_FROM_ACYL_HALIDES
+    PRINS_REACTION
+    PUMMERER_REARRANGEMENT
+    PYROLYSIS_ELIMINATION_OF_CARBOXYLIC_ACIDS_AND_ESTERS
+    PYROLYSIS_OF_HOMOALLYLIC_ALCOHOLS
+    PYROLYSIS_OF_KETO_YLIDS_TO_ALKYNES
+    RADICAL_ADDITION_TO_UNACTIVATED_DOUBLE_BONDS
+    RADICAL_CYCLIZATION
+    RAMBERG_BACKLUND_REACTION
+    REACTION_OF_ALKYL_HALIDES_SULFONATE_ESTERS_WITH_ORGANOMETALLIC_COMPOUNDS
+    REACTION_OF_AMINES_WITH_CARBON_MONOXIDE_OR_CARBON_DIOXIDE
+    REACTION_OF_ARYLDIAZONIUM_SALTS_WITH_CHALCOGEN_NUCLEOPHILES
+    REACTION_OF_METALS_WITH_ORGANOHALIDES
+    REACTION_OF_ORGANOMETALLIC_COMPOUNDS_WITH_OXYGEN
+    REACTION_OF_ORGANOMETALLIC_COMPOUNDS_WITH_PEROXIDES
+    REACTION_OF_ORGANOMETALLICS_WITH_EPOXIDES
+    REARRANGEMENT_OF_ARYL_HYDROXYLAMINES_BAMBERGER_REARRANGEMENT
+    REARRANGEMENT_OF_HYDROPEROXIDES
+    REDUCTION_OF_ACYL_HALIDES_TO_ALDEHYDES_OR_ALCOHOLS_ROSENMUND_REDUCTION
+    REDUCTION_OF_ALCOHOLS_DEHYDROXYLATION
+    REDUCTION_OF_ALDEHYDES_AND_KETONES_TO_ALCOHOLS
+    REDUCTION_OF_ALIPHATIC_NITRO_COMPOUNDS_TO_NITRILES_OR_OXIMES
+    REDUCTION_OF_ALKYL_HALIDES_DEHALOGENATION
+    REDUCTION_OF_AMIDES_TO_ALDEHYDES
+    REDUCTION_OF_AMIDES_TO_AMINES
+    REDUCTION_OF_AROMATIC_RINGS_BIRCH_OR_BENKESER_REDUCTION
+    REDUCTION_OF_AZIDES_TO_PRIMARY_AMINES_STAUDINGER_REACTION
+    REDUCTION_OF_CARBONYL_TO_METHYLENE_IN_ALDEHYDES_AND_KETONES_CLEMMENSEN_REDUCTION_WOLFF_KISHNER_REDUCTION
+    REDUCTION_OF_CARBOXYLIC_ACIDS_AND_ESTERS_TO_ALKANES
+    REDUCTION_OF_CARBOXYLIC_ACIDS_ESTERS__AND_ANHYDRIDES_TO_ALDEHYDES
+    REDUCTION_OF_CARBOXYLIC_ACIDS_TO_ALCOHOLS
+    REDUCTION_OF_CARBOXYLIC_ESTERS_TO_ALCOHOLS
+    REDUCTION_OF_CARBOXYLIC_ESTERS_TO_ETHERS
+    REDUCTION_OF_CYCLIC_ANHYDRIDES_TO_LACTONES_AND_ACID_DERIVATIVES_TO_ALCOHOLS
+    REDUCTION_OF_DISULFIDES_TO_THIOLS
+    REDUCTION_OF_DOUBLE_OR_TRIPLE_BONDS_HYDROGENATION
+    REDUCTION_OF_EPOXIDES
+    REDUCTION_OF_HYDROPEROXIDES_AND_PEROXIDES
+    REDUCTION_OF_HYDROXYARENE_AND_ITS_ESTER_DERIVATIVES
+    REDUCTION_OF_ISOCYANATE_ISOTHIOCYCANATES_DIAZONIUM_SALTS_AND_MISCELLANEOUS_NITROGEN_COMPOUNDS
+    REDUCTION_OF_NITRILES_TO_ALDEHYDES_STEPHEN_REDUCTION
+    REDUCTION_OF_NITRILES_TO_AMINES
+    REDUCTION_OF_NITRO_COMPOUNDS_TO_AMINES
+    REDUCTION_OF_NITRO_COMPOUNDS_TO_HYDROXYLAMINES
+    REDUCTION_OF_NITRO_TO_AZO_COMPOUNDS
+    REDUCTION_OF_NITRO_TO_AZOXY_COMPOUNDS
+    REDUCTION_OF_NITROSO_COMPOUNDS_AND_HYDROXYLAMINES_TO_AMINES
+    REDUCTION_OF_OXIDIZED_NITROGEN_AND_PHOSPHOROUS_COMPOUNDS
+    REDUCTION_OF_OXIMES_TO_PRIMARY_AMINES_OR_AZIRIDINES
+    REDUCTION_OF_SILANES_TO_METHYLENE_COMPOUNDS
+    REDUCTION_OF_SULFONATES
+    REDUCTION_OF_SULFONYL_HALIDES
+    REDUCTION_OF_SULFONYL_HALIDES_AND_SULFONIC_ACIDS_TO_THIOLS_OR_DISULFIDES
+    REDUCTION_OF_SULFOXIDES_AND_SULFONES
+    REDUCTION_OF_THE_CARBON_NITROGEN_BOND_DEAMINATION
+    REDUCTION_OF_THE_CARBON_NITROGEN_DOUBLE_BOND
+    REDUCTION_OF_THE_DOUBLE_OR_TRIPLE_BONDS_CONJUGATED_TO_CARBONYL_OR_CYANO_GROUPS
+    REDUCTIVE_ALKYLATION_OF_ALCOHOLS_WITH_ALDEHYDES_AND_KETONES
+    REDUCTIVE_ALKYLATION_OF_AMMONIA_OR_AMINES
+    REDUCTIVE_CLEAVAGE_OF_AZO_AZOXY_AND_HYDRAZO_COMPOUNDS_TO_AMINES
+    REDUCTIVE_CLEAVAGE_OF_CARBOXYLIC_ESTERS
+    REDUCTIVE_CLEAVAGE_OF_CYCLOPROPANES
+    REFORMATSKY_REACTION
+    REPLACEMENT_OF_A_CARBOXYL_GROUP_BY_AN_ACYL_GROUP_DAKIN_WEST_REACTIONS
+    REPLACEMENT_OF_A_HYDROXY_ALKOXY_ACYLOXY_BY_NITROGEN_NUCLEOPHILES
+    REPLACEMENT_OF_ARYLDIAZONIUM_SALTS_WITH_IODIDE_IONS
+    REPLACEMENT_OF_METALS_BY_HYDROGEN_DEMETALLATION
+    REPLACEMENT_OF_THE_DIAZONIUM_GROUP_BY_HYDROGEN
+    REVERSAL_OF_FRIEDEL_CRAFTS_ALKYLATION
+    RING_OPENING_OF_AZIRIDINES_WITH_NITROGEN_REAGENTS
+    RING_OPENING_OF_AZIRIDINES_WITH_ORGANOMETALLICS_AND_SULFUR_NUCLEOPHILES
+    RING_OPENING_OF_EPOXIDES_AND_EPISULFIDES_WITH_NITROGEN_REAGENTS
+    RING_OPENING_OF_EPOXIDES_AZIRIDINES_WITH_OXYGEN_SULFUR_NUCLEOPHILES
+    RITTER_REACTION
+    S_ALKYLATION_OF_SULFINIC_ACID_SALTS
+    S_ALKYLATION_OF_THIOCYANATES
+    SAKURAI_REACTION
+    SCHIEMANN_REACTION
+    SCHMIDT_REACTION
+    SIGMA_BOND_REARRANGEMENT
+    SILANE_MEDIATED_CARBON_CARBON_COUPLING
+    SMILES_REARRANGEMENT
+    SOMMELET_HAUSER_REARRANGEMENT
+    STEVENS_REARRANGEMENT
+    STIEGLITZ_AND_RELATED_REARRANGEMENTS
+    STORK_ENAMINE_REACTION
+    STORY_SYNTHESIS
+    SUBSTITUTION_OF_AROMATIC_HALIDES_WITH_NITROGEN_NUCLEOPHILES
+    SUBSTITUTION_OF_AROMATIC_NITRO_COMPOUNDS_BY_CARBON_OXYGEN_OR_NITROGEN_NUCLEOPHILES
+    SUBSTITUTION_OF_DIAZONIUM_GROUP_BY_HALOGENS_SANDMEYER_REACTION
+    SUBSTITUTION_OF_DIAZONIUM_GROUP_BY_NITRO
+    SUBSTITUTION_OF_DIAZONIUM_GROUP_BY_SULFUR_NUCLEOPHILES
+    SUBSTITUTION_OF_HALOPHOSPHORUS_COMPOUNDS_WITH_NITROGEN_NUCLEOPHILES
+    SULFENYLATION_SULFONATION_AND_SELENYLATION_OF_KETONES_AND_CARBOXYLIC_ESTERS
+    SULFONATION_OF_AROMATIC_COMPOUNDS
+    SULFONYLATION_OF_AROMATIC_COMPOUNDS
+    TEBBE_PETASIS_OLEFINATION_AND_OTHER_ALTERNATIVE_ALKENYLATIONS
+    THIOALKYLATION_ALKYLTHIOALKYLATION_OF_AROMATIC_COMPOUNDS
+    THORPE_REACTION_THORPE_ZIEGLER_REACTION
+    TISHCHENKO_REACTION
+    TOLLENS_REACTION
+    TRANSAMIDATION_ZIP_REACTION
+    TRANSAMINATION
+    TRANSANNULAR_HYDRIDE_SHIFT
+    TRANSESTERIFICATION
+    TRANSETHERIFICATION_AND_CONVERSION_OF_THIOETHERS_TO_ETHERS
+    TRANSMETALLATION
+    TWO_PLUS_TWO_CYCLOADDITION_OF_ALKENES_AND_ALKYNES
+    TWO_THREE_SIGMATROPIC_REARRANGEMENTS_TWO_THREE_WITTIG_REARRANGEMENT_MISLOW_EVANS_REARRANGEMENT
+    VON_RICHTER_REARRANGEMENT
+    WAGNER_MEERWEIN_AND_RELATED_REACTIONS
+    WALLACH_REARRANGEMENT
+    WILLGERODT_WILLGERODT_KINDLER_REACTIONS
+    WITTIG_REARRANGEMENT
+    WITTIG_WITTIG_HORNER_AND_AZA_WITTIG_REACTIONS_JULIA_OLEFINATION
+
+}
+# ================================================================================
+# 9. PROPERTIES
+# Source file: property.graphqls
+# Physical/chemical property domain: propertyQuery, PropertyInput, the Property type, and the PropertyName enum of measurable property kinds.
+# ================================================================================
+
+extend type Query {
+    # Searches experimental and/or predicted physical/chemical property values (e.g., melting point, boiling point, density) by substance CAS Registry Number, property name, or value range. Returns matching property records with their reported value, measurement conditions, and predicted/preferred-value flags.
+    propertyQuery(propertyInput: PropertyInput, pageParameters: PageParameters): PropertyPage
+}
+
+# Describes the search inputs to query substance properties. Multiple inputs are evaluated with AND by default.
+input PropertyInput {
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Name of the property being described (e.g., melting point, boiling point, density).
+    name: PropertyName
+    # Searchable values including ranges for a specified property.
+    value: FloatRange @ValidateRange
+    # Flag to include predicted property values alongside experimental values in results.
+    isPredicted: Boolean
+}
+
+type SubstanceProperties {
+    substance: Substance
+    properties: [Property]
+}
+
+# Describes physical or predicted properties of a substance.
+type Property {
+    # Name of the property being described (e.g., melting point, boiling point, density).
+    name: PropertyName!
+    # Display value of the property, including units and formatting as reported.
+    value: String!
+    # Conditions under which the property was measured or predicted (e.g., temperature, pressure).
+    condition: [String]
+    # Indicates if this value is the preferred value for the property.
+    isPreferredValue: Boolean
+    # Indicates if the property value is predicted rather than experimentally measured.
+    isPredicted: Boolean
+    # Property finding associated with this property; includes attribution and source context.
+    propertyFinding: PropertyFinding
+
+}
+
+enum PropertyName {
+    AUTOIGNITION_TEMPERATURE
+    BIOCONCENTRATION_FACTOR
+    BOILING_POINT
+    BREAKING_STRENGTH
+    COMBUSTION_ENTHALPY
+    CRITICAL_POINT
+    DENSITY
+    DIELECTRIC_CONSTANT
+    DISSOCIATION_CONSTANT
+    ELECTRIC_CONDUCTANCE
+    ELECTRIC_CONDUCTIVITY
+    ELECTRIC_DIPOLE_MOMENT
+    ELECTRIC_RESISTANCE
+    ELECTRIC_RESISTIVITY
+    ELONGATION_AT_BREAK
+    ELONGATION_AT_YIELD
+    ENTHALPY_OF_VAPORIZATION
+    ENTROPY
+    FLASH_POINT
+    FORMATION_ENTHALPY
+    FREELY_ROTATABLE_BOND_COUNT
+    FREE_ENERGY_OF_FORMATION
+    GLASS_TRANSITION_TEMPERATURE
+    HEAT_CAPACITY
+    HYDROGEN_ACCEPTOR_COUNT
+    HYDROGEN_DONOR_ACCEPTOR_SUM
+    HYDROGEN_DONOR_COUNT
+    KB
+    KA
+    KOC
+    LOGD
+    LOGP
+    MAGNETIC_MOMENT
+    MASS_INTRINSIC_SOLUBILITY
+    MASS_SOLUBILITY
+    MEDIAN_LETHAL_DOSE
+    MELTING_POINT
+    MOLAR_INTRINSIC_SOLUBILITY
+    MOLAR_SOLUBILITY
+    MOLAR_VOLUME
+    OPTICAL_ROTATORY_POWER
+    PHASE_TRANSITION_ENTHALPY
+    PHASE_TRANSITION_ENTROPY
+    PHASE_TRANSITION_TEMPERATURE
+    PKA
+    PKB
+    POLAR_SURFACE_AREA
+    REFRACTIVE_INDEX
+    SOLUBILITY
+    SOUND_VELOCITY
+    SUPERCONDUCTING_CRITICAL_TEMPERATURE
+    SURFACE_TENSION
+    TENSILE_STRENGTH
+    THERMAL_CONDUCTIVITY
+    THERMAL_EXPANSION_COEFFICIENT
+    TRIPLE_POINT
+    ULTIMATE_TENSILE_STRENGTH
+    VAPOR_PRESSURE
+    VISCOSITY
+    YIELD_STRENGTH
+    YOUNGS_MODULUS
+}
+# ================================================================================
+# 10. HAZARDS (GHS)
+# Source file: hazard.graphqls
+# GHS hazard classification domain: hazardQuery, HazardInput, HazardDesignation/HazardAssignment/HazardSymbol types, and the HazardCode enum.
+# ================================================================================
+
+extend type Query {
+    # Searches GHS hazard designations by substance CAS Registry Number or hazard code (e.g., H225). Returns matching hazard designations, including signal word, pictograms, hazard statements, and the issuing authority/jurisdiction.
+    hazardQuery(hazardInput: [HazardInput], pageParameters: PageParameters): HazardDesignationPage
+}
+
+# Describes the search inputs to query hazard designations. Multiple inputs are evaluated with AND by default.
+input HazardInput {
+    # Unique CAS Registry Number assigned to the substance.
+    RN: String
+    # Hazard code (e.g., “H225”, “H314”).
+    code: [HazardCode]
+}
+
+# Describes a health and safety classification of a substance.
+type HazardDesignation {
+    # Substance to which this Hazard Designation applies; the classification, pictograms, signal word, and statements all pertain to this substance.
+    substance: Substance!
+    # Name of the authority that reported or published the designation (e.g., national agency, regional regulator, or supplier following GHS rules).
+    assigningAuthority: String
+    # CAS-assigned source-type bucket indicating the relative authority.
+    authorityType: String!
+    # Jurisdiction in which this designation is applicable (e.g., country, region, or treaty scope). Used to reflect local adoption/implementation of GHS.
+    jurisdiction: String!
+    # Short textual statement attributing or acknowledging the source of the designation
+    attributionStatement: String
+    # Signal word(s) indicating the severity level required under GHS (typically “Danger” or “Warning”).
+    signalWord: [String]
+    # Set of GHS hazard symbols/pictograms applicable to the substance (e.g., flame, corrosion, skull and crossbones).
+    hazardSymbols: [HazardSymbol]!
+    # Set of hazard assignments covering the GHS hazard class/category codes and their corresponding H-statements (e.g., “H225 Highly flammable liquid and vapour”). Note: field name retained as provided.
+    hazardAssignments: [HazardAssignment]!
+}
+
+# Represents the classification decision by a given authority.
+type HazardAssignment {
+    # Hazard code (e.g., “H225”, “H314”).
+    code: HazardCode
+    # Hazard class/category text (e.g., “Flammable liquids; Category 2”, “Skin corrosion/irritation; Category 1A”).
+    hazardClass: String
+    # Hazard statement text corresponding to the code (e.g., “Highly flammable liquid and vapour”, “Causes severe skin burns and eye damage”).
+    statement: String
+}
+
+# Graphical icon used to visually communicate the type of hazard associated with a substance.
+type HazardSymbol {
+    # Text label or code identifying the symbol (e.g., “Flame”, “Corrosion”, “GHS02”).
+    symbol: String
+    # Identifier for the pictogram asset representing the symbol per GHS conventions.
+    hazardPictograph: String
+}
+
+enum GHSsource {
+    CHEMWATCH
+    CAS
+}
+
+enum AssigningAuthority {
+    EXPERT_CURATED
+    GOVERNMENT
+    ECHA_MOST_COMMON
+    ECHA_MOST_SERIOUS
+}
+
+enum HazardCode {
+    AUH001
+    AUH006
+    AUH014
+    AUH018
+    AUH019
+    AUH029
+    AUH031
+    AUH032
+    AUH044
+    AUH066
+    AUH071
+    EUH001
+    EUH006
+    EUH014
+    EUH018
+    EUH019
+    EUH029
+    EUH031
+    EUH032
+    EUH044
+    EUH059
+    EUH066
+    EUH070
+    EUH071
+    EUH201
+    EUH202
+    EUH203
+    EUH204
+    EUH205
+    EUH206
+    EUH207
+    EUH208
+    EUH209
+    EUH209A
+    EUH210
+    EUH211
+    EUH212
+    EUH401
+    H200
+    H201
+    H203
+    H204
+    H205
+    H206
+    H207
+    H208
+    H220
+    H220_H230
+    H220_H231
+    H220_H232
+    H221
+    H222
+    H222_H229
+    H223
+    H224
+    H225
+    H226
+    H227
+    H228
+    H229
+    H230
+    H231
+    H232
+    H240
+    H241
+    H242
+    H250
+    H251
+    H252
+    H260
+    H261
+    H270
+    H271
+    H272
+    H280
+    H281
+    H290
+    H300
+    H300_H310
+    H300_H310_H330
+    H300_H330
+    H301
+    H301_H311
+    H301_H311_H331
+    H301_H331
+    H302
+    H302_H312
+    H302_H312_H332
+    H302_H332
+    H303
+    H303_H313
+    H303_H313_H333
+    H303_H333
+    H304
+    H305
+    H310
+    H310_H330
+    H311
+    H311_H331
+    H312
+    H312_H332
+    H313
+    H313_H333
+    H314
+    H315
+    H315_H320
+    H316
+    H317
+    H318
+    H319
+    H320
+    H330
+    H331
+    H332
+    H333
+    H334
+    H335
+    H335_H336
+    H336
+    H340
+    H341
+    H350
+    H350I
+    H351
+    H360
+    H360D
+    H360DF
+    H360F
+    H360FD
+    H361
+    H361D
+    H361F
+    H361FD
+    H362
+    H370
+    H371
+    H372
+    H373
+    H400
+    H401
+    H402
+    H410
+    H411
+    H412
+    H413
+    H420
+    H421
+    H422
+    H423
+    H431
+    H432
+    H433
+    H441
+    H442
+    H443
+    NOT_CLASSIFIED_UNDER_GHS
+}
+
+# ================================================================================
+# 11. COMMERCIAL CATALOGS
+# Source file: catalog.graphqls
+# Supplier catalog domain: catalogQuery, CatalogInput, CatalogItem and its component/offering/distributor types, and related availability/purity/quantity enums.
+# ================================================================================
+
+extend type Query {
+    # Searches commercial supplier catalog listings for a substance by CAS Registry Number, supplier name, purity, quantity, availability/stock status, or shipping timeframe. Returns matching catalog items (product name, pricing/quantity offerings, purity, supplier links, and the linked substance).
+    catalogQuery (catalogInput: [CatalogInput], pageParameters: PageParameters): CatalogItemPage
+}
+
+# Describes the search inputs to query catalogs. Multiple inputs are evaluated with AND by default.
+input CatalogInput {
+        # Unique CAS Registry Number assigned to the substance.
+        RN: String
+        # Supplier name as provided for the catalog item or issue.
+        supplierName: String
+        # Flag indicating whether bulk quantities are available.
+        isBulkAvailable: Boolean
+        # Flag indicating whether the item is categorized as a screening compound.
+        isScreeningCompound: Boolean
+        # Purity statement as reported (e.g., 99%, 98% GC, 97ee, Ta < 500 ppm).
+        purityCategory: Purity
+        # Supplier-indicated time frame for shipment readiness (e.g., 1 week, 2 weeks).
+        shipsWithin: ShipsWithin
+        # Quantity text as reported (number + unit), e.g., “10 mg”, “100 mL”, or formatted packs.
+        quantity: String
+        # Quantity category for sorting/grouping (e.g., Milligram, Gram, Kilogram quantities, Tons).
+        quantityCategory: QuantityCategory
+        # Stock status at the time of the catalog update (e.g., Maintained in stock, Typically in stock, Limited/intermittent, Synthesis on demand).
+        availability: Availability
+}
+
+# Describes an item within a specific catalog of commercially available substances.
+type CatalogItem {
+    # Alternate identifiers provided by the supplier (e.g., synonym, original RN, UNII, EINECS, DrugBank).
+    auxiliaryIds: [AuxiliaryIdentifier]
+    # Product name assigned by the supplier; may be systematic, trade, or a descriptive variant.
+    name: String
+    # Stock status at the time of the catalog update (e.g., Maintained in stock, Typically in stock, Limited/intermittent, Synthesis on demand).
+    stockAvailability: Availability
+    # Supplier-indicated time frame for shipment readiness (e.g., 1 week, 2 weeks, 4 weeks, 8 weeks, Over 8 weeks).
+    shipsWithin: ShipsWithin
+    # Grade label communicating suggested use or specification (e.g., NMR reference standard, for biological use, anhydrous).
+    grade: String
+    # Purity statement as reported (e.g., 99%, 98% GC, 97ee, Ta < 500 ppm).
+    purity: String
+    purityCategory: Purity
+    # Flag indicating whether bulk quantities are available.
+    isBulkAvailable: Boolean
+    # Flag indicating whether the item is categorized as a screening compound.
+    isScreeningCompound: Boolean
+    # Linked substance entity when the item is represented at substance level.
+    substance: Substance
+    # Text indicating additional components not represented at substance level (e.g., salts, solvents, stoichiometric descriptors).
+    auxiliaryComponents: String
+    # Components of the catalog item (each with identifier/concept/substance/amount/function).
+    catalogItemComponents: [CatalogItemComponent]
+    # Supplier order number used in supplier systems or e-commerce catalogs.
+    orderNumber: String
+    # One or more offerings (price/quantity/scale/category), possibly with ordinal display order.
+    offering: [Offering]
+    # Direct supplier links (pricing & availability, general info, or other supplier-provided pages).
+    supplierLink: [String]
+    # Properties/attributes reported by the supplier (context + value), stored as found.
+    supplierReportedProperties: [SupplierProperty]
+    # Supplier name as provided for the catalog item or issue.
+    supplierName: String
+    # Date indicating recency (e.g., when data was provided/published).
+    currentAsOf: String
+    # Distributors associated with the catalog issue (name, address/location, contacts).
+    distributors: [Distributor]
+}
+
+# Supplier provided synonyms or other identification aspects of a substance offering.
+type AuxiliaryIdentifier {
+    # Context describing type/origin (e.g., synonym, original RN, CAS RN, original name, UNII).
+    context: String
+    # Identifier value (words/codes/numbers) as provided by supplier.
+    value: String
+}
+
+# Component within a specific catalog item.
+type CatalogItemComponent {
+    # Identifiers for the component (e.g., original RN/name, CAS RN, UNII) with context and value.
+    identifier: [AuxiliaryIdentifier]
+    # Linked substance for the component when represented at substance level.
+    substance: Substance
+    # Linked concepts for general subjects or non-structurable components.
+    concepts: [Concept]
+    # Amount text as found (e.g., “30% w/w”, “200 ppm”, “2 M”).
+    amount: String
+    # Role/function of the component (e.g., emulsifier, solvent).
+    function: String
+    # Ordinal for display order of components (1 appears first).
+    ordinal: Int
+}
+
+# Organization identified by the supplier for the catalog issue.
+type Distributor {
+    # Distributor organization name.
+    name: String
+    # Address line (street).
+    address: [String]
+    # City/locality.
+    city: String
+    # Country subunit (state/province/region) when applicable.
+    countrySubunit: String
+    # Postal/ZIP code.
+    postalCode: String
+    # Country name.
+    country: String
+    # Contact information entries (e.g., phone, email, fax, general contact notes) as provided.
+    contactInformation: JSON
+}
+
+# Substance properties provided by the supplier.
+type SupplierProperty {
+    # Context/label describing the property (e.g., function, melting point, description).
+    name: String
+    # Property value as reported by the supplier (e.g., “stabilizer”, “75 °C”, narrative text).
+    value: String
+}
+
+# Describes the offering of the catalog item for sale by the supplier.
+type Offering {
+    # Ordinal for display order of quantity/price rows (1 appears first).
+    ordinal: Int!
+    # Price text as reported (number + currency), may be null if not provided.
+    price: String
+    # Quantity text as reported (number + unit), e.g., “10 mg”, “100 mL”, or formatted packs.
+    quantity: String
+    # Quantity category for sorting/grouping (e.g., Milligram, Gram, Kilogram quantities, Tons).
+    quantityCategory: QuantityCategory
+}
+
+enum QuantityCategory {
+    MILLIGRAM
+    GRAM
+    KILOGRAM_OR_GREATER
+}
+enum Availability {
+    MAINTAINED_IN_STOCK
+    TYPICALLY_IN_STOCK
+    LIMITED_OR_INTERMITTENT_AVAILABILITY
+    SYNTHESIS_ON_DEMAND
+}
+enum ShipsWithin {
+    ONE_WEEK
+    TWO_WEEKS
+    FOUR_WEEKS
+    EIGHT_WEEKS
+    OVER_EIGHT_WEEKS
+}
+enum Purity {
+    EXTREMELY_HIGH
+    VERY_HIGH
+    HIGH
+    LOW
+}
+
+# ================================================================================
+# 12. CONCEPTS (CONTROLLED VOCABULARY)
+# Source file: concept.graphqls
+# CAS Lexicon controlled-vocabulary domain: conceptQuery, ConceptInput, the Concept type (with broader/narrower/related hierarchy), and the SubjectCategory enum.
+# ================================================================================
+
+extend type Query {
+    # Searches the CAS controlled vocabulary/thesaurus of subject concepts (e.g., reaction types, apparatus, techniques) name, subject category, or scope note. Returns matching concepts with their synonyms and broader/narrower/related-concept relationships. If the concepts are being used to create a document query, it is recommended that query for children of a particular concept for comprehensiveness.
+    conceptQuery(conceptInput: ConceptInput, pageParameters: PageParameters): ConceptPage
+}
+
+# Describes search inputs to query concepts and their hierarchy within the CAS Lexicon.
+input ConceptInput {
+    # Authority File Key (AFK)—identifier of the concept record associated with this concept.
+    id: String
+    # Controlled subject categories the concept belongs to (e.g., REACTION, APPARATUS); zero or more may be present.
+    subjectCategories: [SubjectCategory]
+    # Concept name to be searched.
+    name: String
+    # Scope note—definition, coverage, and indexing/search guidance associated with the term.
+    scopeNote: String
+    # Flag indicating a top member in the hierarchy (no broader term).
+    isTopMember: Boolean
+}
+
+# Describes a standardized, controlled vocabulary representing a specific scientific idea.
+type Concept {
+    # Authority File Key (AFK)—unique identifier of the vocabulary entry record associated with this concept.
+    afk: String
+    # Substance linked to this concept (present when the vocabulary entry represents or is associated with a registered substance).
+    substance: Substance
+    # Controlled subject categories the concept belongs to (e.g., REACTION, APPARATUS); zero or more may be present.
+    subjectCategory: [SubjectCategory]
+    # Preferred term/name for the concept.
+    preferredName: String
+    # Scope note—definition, coverage, and indexing/search guidance associated with the term.
+    scopeNote: String
+    # Synonyms/non‑preferred terms for this concept.
+    synonyms: [String]
+    # Associatively related concepts.
+    relatedConcepts: [Concept]
+    # Narrower concepts in the thesaurus hierarchy (children).
+    narrowerConcepts: [Concept]
+    # Broader concepts in the thesaurus hierarchy (parents).
+    broaderConcepts: [Concept]
+    # Flag indicating a top member in the hierarchy (no broader term).
+    isTopMember: Boolean
+    # Document findings (including roles, modifiers, etc.) associated with this concept.
+    conceptFindingPage(pageParameters: PageParameters): ConceptFindingPage
+}
+
+enum SubjectCategory {
+    AGRICULTURE
+    ANALYSIS
+    ANATOMY_GENERAL_AND_MICROBIAL
+    ANIMAL_ANATOMY_INCLUDING_HUMAN
+    ANIMAL_DISEASES_INCLUDING_HUMAN_DISEASES
+    APPARATUS
+    ATOMS_AND_MOLECULES
+    BIOLOGICAL_PROCESSES
+    BIOLOGICAL_SYSTEMS
+    CATALYSTS
+    CERAMICS
+    CONSTRUCTION_MATERIALS_AND_USES
+    ELECTRIC_PROPERTIES_AND_PHENOMENA
+    ENVIRONMENT
+    FLUIDS
+    FOOD_AND_FEED
+    GENETICS
+    GEOLOGICAL_MATERIALS
+    GEOLOGICAL_PHENOMENA_AND_METHODS
+    HORMONES
+    IMAGING_AND_RECORDING
+    IMMUNOLOGY
+    INORGANIC_COMPOUNDS
+    LIPIDS
+    MAGNETIC_PROPERTIES_PHENOMENA_AND_METHODS
+    MATERIALS
+    MECHANICS
+    MEDICINE
+    METALLURGY
+    MISCELLANEOUS
+    NANOTECHNOLOGY
+    OILS_AND_FATS
+    ORGANIC_COMPOUNDS
+    ORGANISM
+    PARTICLES
+    PHARMACEUTICALS
+    PLANT_ANATOMY
+    PLANT_DISEASES
+    POLYMERS
+    POLYMER_ADDITIVES
+    POLYMER_APPLICATIONS
+    POLYMER_PROCESSING
+    POWER_AND_FUELS
+    PROTEINS_AND_PEPTIDES
+    QUANTUM_MECHANICS
+    REACTIONS
+    SCIENCE_GENERAL
+    SEPARATION
+    SOILS
+    SOLIDS
+    SPECTRA
+    SUBATOMIC_PARTICLES_AND_PROCESSES
+    SURFACE_PROPERTIES_AND_PHENOMENA
+    TECHNOLOGICAL_PROCESSES
+    TECHNOLOGICAL_PRODUCTS
+    THERMODYNAMICS
+    TOXICOLOGY
+    UNIVERSE
+}
+
+# ================================================================================
+# 13. DOCUMENTS (PATENTS & JOURNALS)
+# Source file: document.graphqls
+# Source document domain: documentQuery, DocumentInput, the Document interface with Patent and Journal implementations, and supporting person/citation/classification types and enums.
+# ================================================================================
+
+extend type Query {
+    # Searches the CAS literature and patent collection by bibliographic criteria (title, DOI, publication date, author/inventor, patent number, classification codes, keywords, etc.), optionally scoped to documents indexed with a specific substance, concept, or biosequence.
+    documentQuery(
+        documentInput: [DocumentInput],
+        substanceInput: [SubstanceInput],
+        conceptInput: [ConceptInput],
+        biosequenceInput: [BiosequenceInput],
+        pageParameters: PageParameters
+    ): DocumentPage
+}
+
+# Search by author or inventor to query documents.
+input PersonInfo {
+    # Family/last name.
+    lastName: String
+    # Given/first name.
+    firstName: String
+    # ORCID identifier (e.g., 0000-0002-1825-0097).
+    orcidID: String
+}
+
+# Defines search inputs used to query documents. Multiple inputs are evaluated with AND by default.
+input DocumentInput {
+    # Searchable internal/external identifiers associated with the document (e.g., DOI, accession numbers).
+    id: String
+    # Title text for the document; use published title when available.
+    title: String
+    # Searchable field that combines terms from several key fields (e.g., title, abstract, concepts).
+    basicIndex: [String]
+    # Document category types—at least one Primary type, optional Secondary types (e.g., Patent, Journal, Article).
+    docType: DocumentType
+    # Publication date defined to the day; format (yyyy-mm-dd).
+    publicationDate: DateRange @ValidateRange
+    # Alphanumeric publication code; used for linking to publication families.
+    coden: String
+    # Primary language of the document.
+    language: [Language]
+    # Keyword or keyword phrases associated with the document.
+    keywords: [String]
+    # A brief informative summary of the document.
+    abstract: String
+    # Author or inventor of document.
+    person: PersonInfo @ValidatePersonInfo
+    # Digital Object Identifier of the article.
+    doi:String
+    # Journal volume number/identifier.
+    volume: String
+    # Journal issue number/identifier.
+    issue: String
+    # Publisher of journal/document.
+    publisher: String
+    # Normalized patent publication number; may differ from original number.
+    patentNumber: String
+    # Patent application number as assigned by the office.
+    patentApplicationNumber: String
+    # Publication kind code identifying the type of patent document (e.g., A1, B2).
+    kindCode: String
+    # Patent application filing date.
+    applicationDate: DateRange @ValidateRange
+    # Person or entity that legally receives ownership rights to a patent.
+    assigneeNames: String
+    # International Patent Classification (IPC) codes associated with the publication.
+    ipcCodes: [String]
+    # Cooperative Patent Classification (CPC) codes associated with the publication.
+    cpcCodes: [String]
+    # Defines the legal boundaries and scope of the invention in the patent.
+    claims: [String]
+    # Status of the patent publication (e.g., active, withdrawn).
+    patentStatus: PatentStatus
+    # Displayable subject group name (e.g., Biochemistry, Organic Chemistry).
+    subjectGroup: SubjectGroup
+    # Section name corresponding to the section number.
+    section: Section
+    database: Database
+    # Government or intergovernmental agency responsible for administering intellectual property (IP) laws though patents.
+    patentOffice: PatentOffice
+}
+
+# Describes the biblographic structure for scientific records, providing core metadata and CAS-enhanced findings.
+interface Document {
+    # All internal/external identifiers associated with the document (e.g., DOI, accession numbers).
+    id: String
+    # Title text for the document; use published title when available.
+    title: String
+    # Document category types—at least one Primary type, optional Secondary types (e.g., Patent, Journal, Article). Apply title casing.
+    docType: [DocumentType]
+    # Source database from which the record originates (e.g., CAplus, MEDLINE)
+    database: Database
+    # Primary language of the document.
+    language: [Language]
+    # Publication date defined to the day; format (yyyy-mm-dd).
+    publicationDate: String
+    # Alphanumeric publication code; used for linking to publication families.
+    coden: String
+    # CAS accession identifier for the document.
+    CAN: String
+    # accession number used within CAplus (definition may vary by ingestion).
+    caplusAN: String
+    # Keyword or keyword phrases associated with the document.
+    keywords: [String]
+    # One of 80 section numbers covering broad scientific areas.
+    sectionNumber: String
+    # Section name corresponding to the section number
+    section: Section
+    # Short code for the subject group used to segment documents.
+    subsectionNumber: String
+    # Subsection text/name corresponding to the subsection number.
+    subsection: String
+    # Short code for the subject group used to segment documents (alternative to Section when not available).
+    subjectGroupCode: String
+    # Displayable subject group name (e.g., Biochemistry, Organic Chemistry).
+    subjectGroup: SubjectGroup
+    # CAS value‑add findings about substances in the document; include roles/modifiers when present.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # CAS value‑add findings about concepts in the document; include roles/modifiers when present.
+    conceptFindingPage(pageParameters: PageParameters): ConceptFindingPage
+    # A brief informative summary of the document.
+    abstracts: [DocumentAbstract]
+    # Citations that reference Documents within the CAS collection (internal linkage to other Document records).
+    citationsInCollection: [Document]
+    # Bibliographic references to items outside the CAS collection (external citation details).
+    citationsOutsideCollection: [ExternalCitation]
+    reactionFindingPage(pageParameters: PageParameters): ReactionFindingPage
+    propertyFindingPage(pageParameters: PageParameters): PropertyFindingPage
+}
+
+# Specialized document type representing an intellectual property publication issued by a patent office.
+type Patent implements Document  {
+    # All internal/external identifiers associated with the document (e.g., DOI, accession numbers).
+    id: String
+    # Title text for the document; use published title when available.
+    title: String
+    # Document category types—at least one Primary type, optional Secondary types (e.g., Patent, Journal, Article). Apply title casing.
+    docType: [DocumentType]
+    # Source database from which the record originates (e.g., CAplus, MEDLINE)
+    database: Database
+    # Primary language of the document.
+    language: [Language]
+    # Publication date defined to the day; format (yyyy-mm-dd).
+    publicationDate: String
+    # Alphanumeric publication code; used for linking to publication families.
+    coden: String
+    # CAS accession identifier for the document.
+    CAN:String
+    # accession number used within CAplus (definition may vary by ingestion).
+    caplusAN: String
+    # Keyword or keyword phrases associated with the document.
+    keywords: [String]
+    # One of 80 section numbers covering broad scientific areas.
+    sectionNumber: String
+    # Section name corresponding to the section number
+    section: Section
+    # Short code for the subject group used to segment documents.
+    subsectionNumber: String
+    # Subsection text/name corresponding to the subsection number.
+    subsection: String
+    # Short code for the subject group used to segment documents (alternative to Section when not available).
+    subjectGroupCode: String
+    # Displayable subject group name (e.g., Biochemistry, Organic Chemistry).
+    subjectGroup: SubjectGroup
+    # CAS value‑add findings about substances in the document; include roles/modifiers when present.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # CAS value‑add findings about concepts in the document; include roles/modifiers when present.
+    conceptFindingPage(pageParameters: PageParameters): ConceptFindingPage
+    # A brief informative summary of the document.
+    abstracts: [DocumentAbstract]
+    # Inventor names string (semicolon/comma-delimited).
+    inventorNames: String
+    # List of inventors with person attributes (name parts, affiliation).
+    inventors: [Person]
+    # Normalized patent publication number; may differ from original number.
+    patentNumber: String
+    # Patent application number as assigned by the office.
+    patentApplicationNumber: String
+    # Publication kind code identifying the type of patent document (e.g., A1, B2).
+    kindCode: String
+    # Patent application filing date.
+    applicationDate: String
+    # Person or entity that legally receives ownership rights to a patent
+    assigneeNames: String
+    # List of assignee organization names in ordinal order.
+    assignees: [String]
+    # International Patent Classification (IPC) codes associated with the publication.
+    ipcCodes: String
+    # Cooperative Patent Classification (CPC) codes associated with the publication.
+    cpcCodes: String
+    # National classification codes (country-specific).
+    nationalClassifications: String
+    # ECLA classifications (legacy European classification system).
+    eclaClassifications: String
+    # US patent classifications (legacy/current as delivered).
+    usClassifications: String
+    # F‑term classifications (Japan, JPO).
+    ftermClassifications: String
+    # Patent family membership (family grouping of related publications).
+    patentFamily: [PatentFamily]
+    # Language used in claims section.
+    claimLanguage: String
+    # Attribution or provenance of claim text.
+    claimAttribution: String
+    # Defines the legal boundaries and scope of the invention in the patent
+    claims: [Claim]
+    # Status of the patent publication (e.g., active, withdrawn).
+    patentStatus: PatentStatus
+    # Date associated with the patent status.
+    patentStatusDate: String
+    # Government or intergovernmental agency responsible for administering intellectual property (IP) laws through patents.
+    patentOffice: PatentOffice
+    # Current patent owner(s)/assignee(s) recorded for the publication.
+    patentOwner: [String]
+    # Citations that reference Documents within the CAS collection (internal linkage to other Document records).
+    citationsInCollection: [Document]
+    # Bibliographic references to items outside the CAS collection (external citation details).
+    citationsOutsideCollection: [ExternalCitation]
+    reactionFindingPage(pageParameters: PageParameters): ReactionFindingPage
+    propertyFindingPage(pageParameters: PageParameters): PropertyFindingPage
+}
+
+# Describes a scholarly or scientific publication originating from a periodical source.
+type Journal implements Document {
+    # All internal/external identifiers associated with the document (e.g., DOI, accession numbers).
+    id: String
+    # Title text for the document; use published title when available.
+    title: String
+    # Document category types—at least one Primary type, optional Secondary types (e.g., Patent, Journal, Article). Apply title casing.
+    docType: [DocumentType]
+    # Source database from which the record originates (e.g., CAplus, MEDLINE)
+    database: Database
+    # Primary language of the document.
+    language: [Language]
+    # Publication date defined to the day; format (yyyy-mm-dd).
+    publicationDate: String
+    # Alphanumeric publication code; used for linking to publication families.
+    coden: String
+    # CAS accession identifier for the document.
+    CAN:String
+    # accession number used within CAplus (definition may vary by ingestion).
+    caplusAN: String
+    # Keyword or keyword phrases associated with the document.
+    keywords: [String]
+    # One of 80 section numbers covering broad scientific areas.
+    sectionNumber: String
+    # Section name corresponding to the section number
+    section: Section
+    # Short code for the subject group used to segment documents.
+    subsectionNumber: String
+    # Subsection text/name corresponding to the subsection number.
+    subsection: String
+    # Short code for the subject group used to segment documents (alternative to Section when not available).
+    subjectGroupCode: String
+    # Displayable subject group name (e.g., Biochemistry, Organic Chemistry).
+    subjectGroup: SubjectGroup
+    # CAS value‑add findings about substances in the document; include roles/modifiers when present.
+    substanceFindingPage(pageParameters: PageParameters): SubstanceFindingPage
+    # CAS value‑add findings about concepts in the document; include roles/modifiers when present.
+    conceptFindingPage(pageParameters: PageParameters): ConceptFindingPage
+    # A brief informative summary of the document.
+    abstracts: [DocumentAbstract]
+    # Author names string (semicolon/comma-delimited).
+    authorNames: String
+    # List of authors with person attributes (name parts, affiliation).
+    authors: [Person]
+    # Digital Object Identifier of the article.
+    doi: String
+    # Journal volume number/identifier.
+    volume: String
+    # Journal issue number/identifier.
+    issue: String
+    # Page range or e-location identifier when page numbers are absent.
+    pageRange: String
+    # Publisher of journal/document.
+    publisher: String
+    # Journal name.
+    name: String
+    # Citations that reference Documents within the CAS collection (internal linkage to other Document records).
+    citationsInCollection: [Document]
+    # Bibliographic references to items outside the CAS collection (external citation details).
+    citationsOutsideCollection: [ExternalCitation]
+    reactionFindingPage(pageParameters: PageParameters): ReactionFindingPage
+    propertyFindingPage(pageParameters: PageParameters): PropertyFindingPage
+    # Company/organization affiliations associated with the document.
+    companyOrganizations: [CompanyOrganization]
+}
+
+# Corporate, academic, or government institutional affiliations linked to published scientific literature
+type CompanyOrganization {
+    # Organization name.
+    name: String
+    # Subdivision within the organization.
+    subdivision: String
+    # Address lines in ordinal order.
+    addressLine: [String]
+    # City of the organization.
+    city: String
+    # Country subunit (e.g., state or province).
+    countrySubunit: String
+    # Country of the organization.
+    country: String
+    # Postal code.
+    postalCode: String
+    # Region.
+    region: String
+    # Organization identifier (company-name-uri).
+    organizationIdentifier: String
+    # Full formatted address string (populated for Medline documents).
+    formattedAddress: String
+}
+
+type DocumentAbstract {
+    # Category of the abstract instance (e.g., published).
+    context: String!
+    # Language of the abstract text (typically matches document language).
+    language: Language
+    # Textual content of the abstract.
+    text: String!
+}
+
+# Describes an author or inventor associated with a document.
+type Person {
+    # Full display name for the person.
+    fullName: String!
+    # Given/first name.
+    firstName: String
+    # Middle name or initial.
+    middleName: String
+    # Family/last name.
+    lastName: String!
+    # Affiliation (institution/organization).
+    affiliation: String
+    # ORCID identifier (e.g., 0000-0002-1825-0097).
+    orcidID: String
+}
+
+# Describes a grouping of related patent publications that share a common priority or filing lineage.
+type PatentFamily {
+    # Members of the patent family.
+    members: [Patent]
+    # Type of family (e.g., simple, immediate).
+    familyType: String
+    # Last update timestamp/date for the family record.
+    lastUpdateDate: String
+    # Source provider of family data.
+    source: String
+}
+
+type Priority {
+    # Priority application number.
+    priorityApplicationNumber: String
+    # Priority application filing date.
+    priorityApplicationDate: String
+}
+
+# Describes an individual claim within a patent document that defines a specific legal boundary or technical assertion.
+type Claim {
+    # Ordinal claim number.
+    claimNumber: Int!
+    # Claim text.
+    text: [String]
+}
+
+type ClaimImage {
+    type: String!
+    isOriginalImage: Boolean
+    fileName: String
+    imageURI: String
+}
+
+type Keyword {
+    phrase: String
+    words: [String]
+}
+enum Database {
+    CAPLUS
+    MEDLINE
+}
+
+enum DocumentType {
+    ADDRESS
+    ARTICLE
+    BIOGRAPHY
+    BOOK
+    BOOK_REVIEW
+    CONFERENCE
+    DISSERTATION
+    EDITORIAL
+    ERRATA
+    GENERAL_REVIEW
+    JOURNAL
+    LETTER
+    MEETING_ABSTRACT
+    MISCELLANEOUS
+    NEWS_ANNOUNCEMENT
+    PATENT
+    PREPRINT
+    PRODUCT_REVIEW
+    REPORT
+}
+
+enum SubjectGroup {
+    APPLIED_CHEMISTRY
+    BIOCHEMISTRY
+    MACROMOLECULAR_CHEMISTRY
+    ORGANIC_CHEMISTRY
+    PHYSICAL_INORGANIC_AND_ANALYTICAL_CHEMISTRY
+}
+
+enum Section {
+    AGROCHEMICAL_BIOREGULATORS
+    AIR_POLLUTION_AND_INDUSTRIAL_HYGIENE
+    ALICYCLIC_COMPOUNDS
+    ALIPHATIC_COMPOUNDS
+    ALKALOIDS
+    AMINO_ACIDS_PEPTIDES_AND_PROTEINS
+    ANIMAL_NUTRITION
+    APPARATUS_AND_PLANT_EQUIPMENT
+    BENZENE_ITS_DERIVATIVES_AND_CONDENSED_BENZENOID_COMPOUNDS
+    BIOCHEMICAL_GENETICS
+    BIOCHEMICAL_METHODS
+    BIOMOLECULES_AND_THEIR_SYNTHETIC_ANALOGS
+    CARBOHYDRATES
+    CATALYSIS_REACTION_KINETICS_AND_INORGANIC_REACTION_MECHANISMS
+    CELLULOSE_LIGNIN_PAPER_AND_OTHER_WOOD_PRODUCTS
+    CEMENT_CONCRETE_AND_RELATED_BUILDING_MATERIALS
+    CERAMICS
+    CHEMISTRY_OF_SYNTHETIC_HIGH_POLYMERS
+    COATINGS_INKS_AND_RELATED_PRODUCTS
+    CRYSTALLOGRAPHY_AND_LIQUID_CRYSTALS
+    DYES_ORGANIC_PIGMENTS_FLUORESCENT_BRIGHTENERS_AND_PHOTOGRAPHIC_SENSITIZERS
+    ELECTRIC_PHENOMENA
+    ELECTROCHEMICAL_RADIATIONAL_AND_THERMAL_ENERGY_TECHNOLOGY
+    ELECTROCHEMISTRY
+    ENZYMES
+    ESSENTIAL_OILS_AND_COSMETICS
+    EXTRACTIVE_METALLURGY
+    FERMENTATION_AND_BIOINDUSTRIAL_BIOCHEMISTRY
+    FERROUS_METALS_AND_ALLOYS
+    FERTILIZERS_SOILS_AND_PLANT_NUTRITION
+    FOOD_AND_FEED_CHEMISTRY
+    FOSSIL_FUELS_DERIVATIVES_AND_RELATED_PRODUCTS
+    GENERAL_BIOCHEMISTRY
+    GENERAL_ORGANIC_CHEMISTRY
+    GENERAL_PHYSICAL_CHEMISTRY
+    HETEROCYCLIC_COMPOUNDS_MORE_THAN_ONE_HETERO_ATOM
+    HETEROCYCLIC_COMPOUNDS_ONE_HETERO_ATOM
+    HISTORY_EDUCATION_AND_DOCUMENTATION
+    IMMUNOCHEMISTRY
+    INDUSTRIAL_CARBOHYDRATES
+    INDUSTRIAL_INORGANIC_CHEMICALS
+    INDUSTRIAL_ORGANIC_CHEMICALS_LEATHER_FATS_AND_WAXES
+    INORGANIC_ANALYTICAL_CHEMISTRY
+    INORGANIC_CHEMICALS_AND_REACTIONS
+    MAGNETIC_PHENOMENA
+    MAMMALIAN_BIOCHEMISTRY
+    MAMMALIAN_HORMONES
+    MAMMALIAN_PATHOLOGICAL_BIOCHEMISTRY
+    MICROBIAL_ALGAL_AND_FUNGAL_BIOCHEMISTRY
+    MINERALOGICAL_AND_GEOLOGICAL_CHEMISTRY
+    NONFERROUS_METALS_AND_ALLOYS
+    NONMAMMALIAN_BIOCHEMISTRY
+    NUCLEAR_PHENOMENA
+    NUCLEAR_TECHNOLOGY
+    OPTICAL_ELECTRON_AND_MASS_SPECTROSCOPY_AND_OTHER_RELATED_PROPERTIES
+    ORGANIC_ANALYTICAL_CHEMISTRY
+    ORGANOMETALLIC_AND_ORGANOMETALLOIDAL_COMPOUNDS
+    PHARMACEUTICALS
+    PHARMACEUTICAL_ANALYSIS
+    PHARMACOLOGY
+    PHASE_EQUILIBRIUMS_CHEMICAL_EQUILIBRIUMS_AND_SOLUTIONS
+    PHYSICAL_ORGANIC_CHEMISTRY
+    PHYSICAL_PROPERTIES_OF_SYNTHETIC_HIGH_POLYMERS
+    PLANT_BIOCHEMISTRY
+    PLASTICS_FABRICATION_AND_USES
+    PLASTICS_MANUFACTURE_AND_PROCESSING
+    PROPELLANTS_AND_EXPLOSIVES
+    RADIATION_BIOCHEMISTRY
+    RADIATION_CHEMISTRY_PHOTOCHEMISTRY_AND_PHOTOGRAPHIC_AND_OTHER_REPROGRAPHIC_PROCESSES
+    STEROIDS
+    SURFACE_ACTIVE_AGENTS_AND_DETERGENTS
+    SURFACE_CHEMISTRY_AND_COLLOIDS
+    SYNTHETIC_ELASTOMERS_AND_NATURAL_RUBBER
+    TERPENES_AND_TERPENOIDS
+    TEXTILES_AND_FIBERS
+    THERMODYNAMICS_THERMOCHEMISTRY_AND_THERMAL_PROPERTIES
+    TOXICOLOGY
+    UNIT_OPERATIONS_AND_PROCESSES
+    WASTE_TREATMENT_AND_DISPOSAL
+    WATER
+}
+
+enum Language {
+    ABKHAZIAN
+    AFAR
+    AFRIKAANS
+    AKAN
+    ALBANIAN
+    AMHARIC
+    ARABIC
+    ARAGONESE
+    ARMENIAN
+    ASSAMESE
+    AVARIC
+    AVESTAN
+    AYMARA
+    AZERBAIJANI
+    BAMBARA
+    BASHKIR
+    BASQUE
+    BELARUSIAN
+    BENGALI
+    BIHARI
+    BISLAMA
+    BOSNIAN
+    BRETON
+    BULGARIAN
+    BURMESE
+    CATALAN
+    CHAMORRO
+    CHECHEN
+    CHINESE
+    CHUVASH
+    CORNISH
+    CORSICAN
+    CREE
+    CROATIAN
+    CZECH
+    DANISH
+    DIVEHI
+    DUTCH
+    DZONGKHA
+    ENGLISH
+    ESPERANTO
+    ESTONIAN
+    EWE
+    FAROESE
+    FIJIAN
+    FINNISH
+    FRENCH
+    FRISIAN
+    FULAH
+    GAELIC
+    GALLEGAN
+    GANDA
+    GEORGIAN
+    GERMAN
+    GREEK
+    GREENLANDIC
+    GUARANI
+    GUJARATI
+    HAITIAN
+    HAUSA
+    HEBREW
+    HERERO
+    HINDI
+    HIRI_MOTU
+    HUNGARIAN
+    ICELANDIC
+    IDO
+    IGBO
+    INDONESIAN
+    INTERLINGUA
+    INTERLINGUE
+    INUKTITUT
+    INUPIAQ
+    IRISH
+    ITALIAN
+    JAPANESE
+    JAVANESE
+    KANNADA
+    KANURI
+    KASHMIRI
+    KAZAKH
+    KHMER
+    KIKUYU
+    KINYARWANDA
+    KIRGHIZ
+    KOMI
+    KONGO
+    KOREAN
+    KUANYAMA
+    KURDISH
+    LAO
+    LATIN
+    LATVIAN
+    LIMBURGISH
+    LINGALA
+    LITHUANIAN
+    LUBA_KATANGA
+    LUXEMBOURGISH
+    MACEDONIAN
+    MALAGASY
+    MALAY
+    MALAYALAM
+    MALTESE
+    MANX
+    MAORI
+    MARATHI
+    MARSHALLESE
+    MOLDAVIAN
+    MONGOLIAN
+    NAURU
+    NAVAJO
+    NDONGA
+    NEPALI
+    NORTHERN_SAMI
+    NORTH_NDEBELE
+    NORWEGIAN
+    NORWEGIAN_BOKMAL
+    NORWEGIAN_NYNORSK
+    NYANJA
+    OCCITAN
+    OJIBWA
+    ORIYA
+    OROMO
+    OSSETIAN
+    PALI
+    PANJABI
+    PERSIAN
+    POLISH
+    PORTUGUESE
+    PUSHTO
+    QUECHUA
+    RHAETO_ROMANCE
+    ROMANIAN
+    RUNDI
+    RUSSIAN
+    SAMOAN
+    SANGO
+    SANSKRIT
+    SARDINIAN
+    SERBIAN
+    SERBO_CROATIAN
+    SHONA
+    SICHUAN_YI
+    SINDHI
+    SINHALESE
+    SLOVAK
+    SLOVENIAN
+    SOMALI
+    SOTHO_SOUTHERN
+    SOUTH_NDEBELE
+    SPANISH
+    SUNDANESE
+    SWAHILI
+    SWATI
+    SWEDISH
+    TAGALOG
+    TAHITIAN
+    TAJIK
+    TAMIL
+    TATAR
+    TELUGU
+    THAI
+    TIBETAN
+    TIGRINYA
+    TONGA
+    TSONGA
+    TSWANA
+    TURKISH
+    TURKMEN
+    TWI
+    UIGHUR
+    UKRAINIAN
+    URDU
+    UZBEK
+    VENDA
+    VIETNAMESE
+    VOLAPUK
+    WALLOON
+    WELSH
+    WOLOF
+    XHOSA
+    YIDDISH
+    YORUBA
+    ZHUANG
+    ZULU
+}
+
+enum PatentStatus {
+    ALIVE
+    DEAD
+    INDETERMINATE
+    TRANSITIONAL
+    UNKNOWN
+}
+
+enum PatentOffice {
+    AFGHANISTAN
+    AFRICAN_INTELLECTUAL_PROPERTY_ORGANIZATION
+    AFRICAN_REGIONAL_INDUSTRIAL_PROPERTY_ORGANIZATION
+    ALAND_ISLANDS
+    ALBANIA
+    ALGERIA
+    AMERICAN_SAMOA
+    ANDORRA
+    ANGOLA
+    ANGUILLA
+    ANTARCTICA
+    ANTIGUA_AND_BARBUDA
+    ARGENTINA
+    ARMENIA
+    ARUBA
+    AUSTRALIA
+    AUSTRIA
+    AZERBAIJAN
+    BAHAMAS
+    BAHRAIN
+    BANGLADESH
+    BARBADOS
+    BELARUS
+    BELGIUM
+    BELIZE
+    BENELUX_TRADEMARKS_AND_DESIGNS_OFFICE
+    BENIN
+    BERMUDA
+    BHUTAN
+    BOLIVIA_PLURINATIONAL_STATE_OF
+    BONAIRE_SAINT_EUSTATIUS_AND_SABA
+    BOSNIA_AND_HERZEGOVINA
+    BOTSWANA
+    BOUVET_ISLAND
+    BRAZIL
+    BRITISH_INDIAN_OCEAN_TERRITORY
+    BRUNEI_DARUSSALAM
+    BULGARIA
+    BURKINA_FASO
+    BURMA
+    BURUNDI
+    CAMBODIA
+    CAMEROON
+    CANADA
+    CAPE_VERDE
+    CAYMAN_ISLANDS
+    CENTRAL_AFRICAN_REPUBLIC
+    CHAD
+    CHILE
+    CHINA
+    CHRISTMAS_ISLAND
+    COCOS_KEELING_ISLANDS
+    COLOMBIA
+    COMOROS
+    CONGO
+    CONGO_THE_DEMOCRATIC_REPUBLIC_OF_THE
+    COOK_ISLANDS
+    COSTA_RICA
+    COTE_D_IVOIRE
+    CROATIA
+    CUBA
+    CURACAO
+    CYPRUS
+    CZECH_REPUBLIC
+    CZECHOSLOVAKIA
+    DENMARK
+    DJIBOUTI
+    DOMINICA
+    DOMINICAN_REPUBLIC
+    EAST_TIMOR
+    ECUADOR
+    EGYPT
+    EL_SALVADOR
+    EQUATORIAL_GUINEA
+    ERITREA
+    ESTONIA
+    ESWATINI
+    ETHIOPIA
+    EURASIAN_PATENT_ORGANIZATION
+    EUROPEAN_PATENT_ORGANIZATION
+    FALKLAND_ISLANDS_MALVINAS
+    FAROE_ISLANDS
+    FEDERAL_REPUBLIC_OF_GERMANY
+    FIJI
+    FINLAND
+    FRANCE
+    FRENCH_AFARS_AND_ISSAS
+    FRENCH_GUIANA
+    FRENCH_POLYNESIA
+    FRENCH_SOUTHERN_TERRITORIES
+    GABON
+    GAMBIA
+    GEORGIA
+    GERMAN_DEMOCRATIC_REPUBLIC
+    GERMANY
+    GHANA
+    GIBRALTAR
+    GREECE
+    GREENLAND
+    GRENADA
+    GUADELOUPE
+    GUAM
+    GUATEMALA
+    GUERNSEY
+    GUINEA
+    GUINEA_BISSAU
+    GUYANA
+    HAITI
+    HEARD_ISLAND_AND_MCDONALD_ISLANDS
+    HOLY_SEE_VATICAN_CITY_STATE
+    HONDURAS
+    HONG_KONG
+    HUNGARY
+    IP_COM_JOURNAL
+    ICELAND
+    INDIA
+    INDONESIA
+    INTERNATIONAL_BUREAU_OF_WIPO
+    IRAN_ISLAMIC_REPUBLIC_OF
+    IRAQ
+    IRELAND
+    ISLE_OF_MAN
+    ISRAEL
+    ITALY
+    JAMAICA
+    JAPAN
+    JERSEY
+    JORDAN
+    KAZAKHSTAN
+    KENYA
+    KIRIBATI
+    KOREA_DEMOCRATIC_PEOPLES_REPUBLIC_OF
+    KOREA_REPUBLIC_OF
+    KUWAIT
+    KYRGYZSTAN
+    LAO_PEOPLES_DEMOCRATIC_REPUBLIC
+    LATVIA
+    LEBANON
+    LESOTHO
+    LIBERIA
+    LIBYA
+    LIECHTENSTEIN
+    LITHUANIA
+    LUXEMBOURG
+    MACAO
+    MACEDONIA_THE_FORMER_YUGOSLAVIA_REPUBLIC_OF
+    MADAGASCAR
+    MALAWI
+    MALAYSIA
+    MALDIVES
+    MALI
+    MALTA
+    MARSHALL_ISLANDS
+    MARTINIQUE
+    MAURITANIA
+    MAURITIUS
+    MAYOTTE
+    MEXICO
+    MICRONESIA_FEDERATED_STATES_OF
+    MOLDOVA_REPUBLIC_OF
+    MONACO
+    MONGOLIA
+    MONTENEGRO
+    MONTSERRAT
+    MOROCCO
+    MOZAMBIQUE
+    MYANMAR
+    NAMIBIA
+    NAURU
+    NEPAL
+    NETHERLANDS
+    NETHERLANDS_ANTILLES
+    NEW_CALEDONIA
+    NEW_ZEALAND
+    NICARAGUA
+    NIGER
+    NIGERIA
+    NIUE
+    NORFOLK_ISLAND
+    NORTH_VIET_NAM
+    NORTHERN_MARIANA_ISLANDS
+    NORWAY
+    OMAN
+    PAKISTAN
+    PALAU
+    PALESTINE_STATE_OF
+    PANAMA
+    PAPUA_NEW_GUINEA
+    PARAGUAY
+    PATENT_OFFICE_OF_THE_COOPERATION_COUNCIL_FOR_THE_ARAB_STATES_OF_THE_GULF_GCC
+    PERU
+    PHILIPPINES
+    PITCAIRN
+    POLAND
+    PORTUGAL
+    PUERTO_RICO
+    QATAR
+    RESEARCH_DISCLOSURE
+    REUNION
+    RHODESIA
+    ROMANIA
+    RUSSIAN_FEDERATION
+    RWANDA
+    SAINT_BARTHELEMY
+    SAINT_HELENA_ASCENSION_AND_TRISTAN_DA_CUNHA
+    SAINT_KITTS_AND_NEVIS
+    SAINT_LUCIA
+    SAINT_PIERRE_AND_MIQUELON
+    SAINT_VINCENT_AND_THE_GRENADINES
+    SAMOA
+    SAN_MARINO
+    SAO_TOME_AND_PRINCIPE
+    SAUDI_ARABIA
+    SENEGAL
+    SERBIA
+    SERBIA_AND_MONTENEGRO
+    SEYCHELLES
+    SIERRA_LEONE
+    SINGAPORE
+    SINT_MAARTEN_DUTCH_PART
+    SLOVAKIA
+    SLOVENIA
+    SOCIALIST_PEOPLES_LIBYAN_ARAB_JAMAHIRIYA
+    SOLOMON_ISLANDS
+    SOMALIA
+    SOUTH_AFRICA
+    SOUTH_GEORGIA_AND_THE_SOUTH_SANDWICH_ISLANDS
+    SOUTH_SUDAN
+    SOUTH_VIET_NAM
+    SPAIN
+    SRI_LANKA
+    ST_BARTHELEMY
+    ST_MARTIN_FRENCH_PART
+    SUDAN
+    SURINAME
+    SVALBARD_AND_JAN_MAYEN
+    SWAZILAND
+    SWEDEN
+    SWITZERLAND
+    SYRIAN_ARAB_REPUBLIC
+    TAIWAN_PROVINCE_OF_CHINA
+    TAJIKISTAN
+    TANZANIA_UNITED_REPUBLIC_OF
+    THAILAND
+    THE_REPUBLIC_OF_NORTH_MACEDONIA
+    TIMOR_LESTE
+    TOGO
+    TOKELAU
+    TONGA
+    TRINIDAD_AND_TOBAGO
+    TUNISIA
+    TURKMENISTAN
+    TURKS_AND_CAICOS_ISLANDS
+    TUVALU
+    TURKIYE
+    USSR
+    UGANDA
+    UKRAINE
+    UNITED_ARAB_EMIRATES
+    UNITED_KINGDOM
+    UNITED_NATIONS
+    UNITED_STATES
+    UNITED_STATES_MINOR_OUTLYING_ISLANDS
+    UNKNOWN_LOCATION
+    URUGUAY
+    UZBEKISTAN
+    VANUATU
+    VENEZUELA_BOLIVARIAN_REPUBLIC_OF
+    VIETNAM
+    VIRGIN_ISLANDS_BRITISH
+    VIRGIN_ISLANDS_US
+    WALLIS_AND_FUTUNA
+    WESTERN_SAHARA
+    WORLD_INTELLECTUAL_PROPERTY_ORGANIZATION
+    YEMEN
+    YUGOSLAVIA
+    ZAIRE
+    ZAMBIA
+    ZIMBABWE
+}
+
+# Represents a bibliographic reference within a document that points to material outside the CAS document collection.
+type ExternalCitation {
+    # Last name of the first author.
+    personLastName: String
+    # Initial(s) of the first author's given name.
+    personInitial: String
+    # Corporate author name (organization as author).
+    corporateAuthor: String
+    # Issue number of the cited item.
+    issue: String
+    # Volume number of the cited item.
+    volume: String
+    # Publication date of the cited item.
+    publicationDate: String
+    # Page (start or specific page) of the cited item.
+    page: String
+    # Two‑letter patent office code.
+    patentOfficeCode: String
+    # Original patent number as presented by the office (may match normalized number).
+    originalPatentNumber: String
+    # Patent kind code.
+    kindCode: String
+    # Reference work (journal/book titles and related elements combined for display, comma‑separated).
+    refWork: String
+    # Short display label for the citation (source‑specific).
+    label: String
+    # Identifiers associated with the citation (context/value pairs such as PubMed ID).
+    identifier: [ReferenceIdentifier]
+}
+
+# Represents a contextual identifier associated with a document from an external citation.
+type ReferenceIdentifier {
+    # Type of identifier, e.g., PubMed ID.
+    context: String
+    # Identifier value in that context.
+    value: String
+}
+
+# ================================================================================
+# 14. DOCUMENT FINDINGS
+# Source file: finding.graphqls
+# Cross-domain CAS-curated findings that tie substances, concepts, properties, and reactions back to the documents they were extracted from (DocumentFinding interface and its Substance/Concept/Property/Reaction finding implementations).
+# ================================================================================
+
+# Base structure for all extracted CAS value-add findings tied back to the originating document.
+interface DocumentFinding {
+    document: Document
+}
+
+# CAS-curated value-added finding that identifies and characterizes a substance related to the novelty mentioned within a document.
+type SubstanceFinding implements DocumentFinding {
+    substance: Substance
+    nameInDocument: String
+    modifier: String
+    roles: [Role]
+    superRoles: [Role]
+    document: Document
+}
+
+# Describes a conceptual or controlled-vocabulary finding identified within a document.
+type ConceptFinding implements DocumentFinding {
+
+    concept: Concept
+    modifier: String
+    roles: [Role]
+    superRoles: [Role]
+    document: Document
+}
+
+# Describes a substance property found within a collection, document, or a predicted value.
+ type PropertyFinding implements DocumentFinding {
+     attributionCode: String
+     attributionText: String
+     document: Document
+     substance: Substance
+     property: Property
+ }
+
+# Describes a CAS-curated reaction identified within a document.
+type ReactionFinding implements DocumentFinding {
+    reactions: Reaction
+    document: Document
+ }
+
+# Represents a controlled vocabulary role or supperrole describing the functional significance of a substance or concept within a document.
+type Role {
+    description: String
+    code: String
+}
+
+# Role of a substance as it appears in document findings.
+enum SubstanceRole {
+    ADV_ADVERSE_EFFECT_INC_TOXICITY
+    AGR_AGRICULTURAL_USE
+    AMX_ANALYTICAL_MATRIX
+    ANST_ANALYTICAL_STUDY
+    ANT_ANALYTE
+    ARG_ANALYTICAL_REAGENT_USE
+    ARU_ANALYTICAL_ROLE_UNCLASSIFIED
+    BAC_BIOLOGICAL_ACTIVITY_OR_EFFECTOR_EXCEPT_ADVERSE
+    BCP_BIOCHEMICAL_PROCESS
+    BIOL_BIOLOGICAL_STUDY
+    BMF_BIOINDUSTRIAL_MANUFACTURE
+    BPN_BIOSYNTHETIC_PREPARATION
+    BSU_BIOLOGICAL_STUDY_UNCLASSIFIED
+    BUU_BIOLOGICAL_USE_UNCLASSIFIED
+    BYP_BYPRODUCT
+    CAT_CATALYST_USE
+    CMBI_COMBINATORIAL_STUDY
+    COS_COSMETIC_USE
+    DGN_DIAGNOSTIC_USE
+    FFD_FOOD_OR_FEED_USE
+    FMU_FORMATION_UNCLASSIFIED
+    FORM_FORMATION_NONPREPARATIVE
+    GFM_GEOLOGICAL_OR_ASTRONOMICAL_FORMATION
+    GOC_GEOLOGICAL_OR_ASTRONOMICAL_OCCURRENCE
+    GPR_GEOLOGICAL_OR_ASTRONOMICAL_PROCESS
+    IMF_INDUSTRIAL_MANUFACTURE
+    MOA_MODIFIER_OR_ADDITIVE_USE
+    MSC_MISCELLANEOUS
+    NANO_NANOMATERIAL
+    NPO_NATURAL_PRODUCT_OCCURENCE
+    NUU_OTHER_USE_UNCLASSIFIED
+    OCCU_OCCURRENCE
+    OCU_OCCURRENCE_UNCLASSIFIED
+    PAC_PHARMACOLOGICAL_ACTIVITY
+    PEP_PHYSICAL_ENGINEERING_OR_CHEMICAL_PROCESS
+    PKT_PHARMACOKINETICS
+    POF_POLYMER_IN_FORMULATION
+    POL_POLLUTANT
+    PREP_PREPARATION
+    PROC_PROCESS
+    PRPH_PROPHETIC_SUBSTANCE
+    PRP_PROPERTIES
+    PUR_PURIFICATION_AND_RECOVERY
+    RACT_REACTANT_OR_REAGENT
+    RCT_REACTANT
+    REM_REMOVAL_OR_DISPOSAL
+    RGT_REAGENT
+    SCLM_SUBSTANCE_IN_CLAIMS
+    SPN_SYNTHETIC_PREPARATION
+    TEM_TECHNICAL_OR_ENGINEERED_MATERIAL_USE
+    THU_THERAPEUTIC_USE
+}

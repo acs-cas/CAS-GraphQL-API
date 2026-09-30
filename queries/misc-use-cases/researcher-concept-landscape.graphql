@@ -1,0 +1,27 @@
+# Map a researcher's research landscape: find documents by author name and collect the
+# CAS Lexicon concepts indexed against them, to surface their dominant research themes.
+# Verified against the live API 2026-09-30 (Susan Olesik, 197 total publications).
+query conceptQuery(
+  $first:      String = ""
+  $last:       String
+  $pageNumber: Int    = 1
+  $pageSize:   Int    = 50
+) {
+  documentQuery(
+    documentInput: { person: { lastName: $last, firstName: $first } }
+    pageParameters: { page: $pageNumber, pageSize: $pageSize }
+  ) {
+    documents {
+      conceptFindingPage {
+        conceptFindings {
+          concept { preferredName }
+          modifier
+        }
+      }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Variables:
+# { "first": "Susan", "last": "Olesik", "pageNumber": 1, "pageSize": 50 }

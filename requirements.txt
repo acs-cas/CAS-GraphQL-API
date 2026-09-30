@@ -2,3 +2,7 @@ requests
 jupyter
 ipykernel
 nbformat
+rdkit
+pandas
+matplotlib
+Pillow

@@ -1,0 +1,27 @@
+# Browse reactions where a specific compound (by RN) is the product, including staged
+# reactants/reagents/solvents/conditions for each matching reaction.
+# Verified against the live API 2026-09-30 (RN 1689552-89-3, 47 matching reactions).
+query reactionBrowse($rn: String, $pageNumber: Int = 1, $pageSize: Int = 10) {
+  reactionQuery(
+    reactionInput:  { reactionParticipant: { RN: $rn, role: PRODUCT } }
+    pageParameters: { page: $pageNumber, pageSize: $pageSize }
+  ) {
+    reactions {
+      id
+      products {
+        yield
+        substance { substance { preferredName } }
+      }
+      stages {
+        reactants { substance { preferredName } }
+        reagents  { substance { preferredName } }
+        solvents  { substance { preferredName } }
+        conditions { temperature pressure duration }
+      }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Variables:
+# { "rn": "1689552-89-3", "pageNumber": 1, "pageSize": 10 }

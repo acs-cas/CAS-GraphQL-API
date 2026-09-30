@@ -1,0 +1,23 @@
+# Pull full reaction detail (reagents, catalysts, solvents, conditions, yield, source
+# document) for a specific matched reaction, by its id from forward-validate-reaction.graphql.
+# Verified against the live API 2026-09-30 (reaction id 35659280).
+query R($id: String) {
+  reactionQuery(reactionInput: {id: $id}) {
+    reactions {
+      id publicIdentifier scheme reactionType
+      document { caplusAN title docType database publicationDate }
+      stages {
+        stage
+        reactants { substance { RN preferredName } }
+        reagents { substance { RN preferredName } }
+        catalysts { substance { RN preferredName } }
+        solvents { substance { RN preferredName } }
+        conditions { temperature duration ph pressure }
+      }
+      products { yield substance { substance { RN preferredName } } }
+    }
+  }
+}
+
+# Variables:
+# { "id": "35659280" }
