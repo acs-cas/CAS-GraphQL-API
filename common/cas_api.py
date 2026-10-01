@@ -78,6 +78,24 @@ def get_access_token(force_refresh: bool = False) -> str:
     return _token
 
 
+def _strip_whitespace(value):
+    """Recursively strip leading/trailing whitespace from string values.
+
+    Works around a live API bug (currently being fixed server-side) where a
+    few string fields -- molecularFormula, observed so far -- come back with
+    trailing whitespace/newlines, e.g. "C9H8O4\\n      ". Safe to remove this
+    helper (and the one call to it below) once the server fix ships and the
+    stray whitespace stops appearing.
+    """
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        return [_strip_whitespace(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _strip_whitespace(v) for k, v in value.items()}
+    return value
+
+
 def graphql(query: str, variables: dict | None = None) -> dict:
     """Run one GraphQL query against the live CAS GraphQL API and return the
     parsed JSON response (including a top-level "errors" list, if any --
@@ -105,4 +123,4 @@ def graphql(query: str, variables: dict | None = None) -> dict:
             timeout=60,
         )
     response.raise_for_status()
-    return response.json()
+    return _strip_whitespace(response.json())
