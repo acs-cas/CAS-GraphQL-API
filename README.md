@@ -53,18 +53,12 @@ the same navigation strip at the bottom to jump between topics.
 
 ## Credentials
 
-You'll need a **Client ID** and **Client Secret** from CAS Custom Services℠. Every notebook
-that calls the live API prompts for these interactively (`input()` for the Client ID,
-`getpass()` — masked — for the secret) via `common/cas_api.py`. **Nothing is hard-coded and
-nothing is written to disk**, so there's no secret sitting in the notebook source to remember to
-delete before committing.
+You'll need a **Client ID** and **Client Secret** from CAS Custom Services℠. Any notebook that
+calls the live API prompts for them when you run it.
 
-**Before re-committing a run**, the one thing to actually clear is *cell output* — once you run a
-notebook, its saved file includes whatever got printed (query results, mainly; the token value
-itself is deliberately never printed). Clear it with either:
-
-- In the notebook UI: **Kernel > Restart Kernel and Clear All Outputs**, then save, or
-- From the command line: `jupyter nbconvert --clear-output --inplace notebooks/*.ipynb`
+Notebooks on separate kernels each prompt on their own. To enter your credentials just once,
+configure the notebooks to share a single kernel: authenticate in one, then in each of the
+others change the kernel to pick the already-running session.
 
 ## Schema reference
 
