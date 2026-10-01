@@ -1,11 +1,13 @@
 """Shared live client for the CAS GraphQL API.
 
 Credentials are entered interactively via input()/getpass() -- never hard-coded
-in a cell -- so there is nothing to "blank out" before pushing a notebook to
-GitHub. The client secret is masked as you type. A cell's *output* can still
-end up in the .ipynb file once you run it, so before publishing run
-Kernel > Restart Kernel and Clear All Outputs (or `jupyter nbconvert --clear-output`)
-to drop any cached responses/tokens from the saved file.
+in a cell, never written to disk. The client secret is masked as you type, and
+both the credentials and the token it mints live only in this kernel's memory,
+so they are gone when the kernel stops.
+
+Each notebook starts its own kernel, so each one prompts separately. To
+authenticate once for several notebooks, point them at a single shared kernel
+(in JupyterLab: Kernel > Change Kernel > use the running session).
 
 See notebooks/01_Authentication.ipynb for the manual, unwrapped version of this
 same flow -- this module exists so the domain notebooks (03+) don't have to
@@ -42,7 +44,7 @@ def get_access_token(force_refresh: bool = False) -> str:
     Prompts for credentials on first use (this session only -- nothing is
     written to disk). Reused automatically by graphql() below.
     """
-    global _token, _token_expires_at
+    global _token, _token_expires_at, _credentials
 
     if not force_refresh and _token and time.time() < _token_expires_at:
         return _token
@@ -76,6 +78,24 @@ def get_access_token(force_refresh: bool = False) -> str:
     return _token
 
 
+def _strip_whitespace(value):
+    """Recursively strip leading/trailing whitespace from string values.
+
+    Works around a live API bug (currently being fixed server-side) where a
+    few string fields -- molecularFormula, observed so far -- come back with
+    trailing whitespace/newlines, e.g. "C9H8O4\\n      ". Safe to remove this
+    helper (and the one call to it below) once the server fix ships and the
+    stray whitespace stops appearing.
+    """
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        return [_strip_whitespace(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _strip_whitespace(v) for k, v in value.items()}
+    return value
+
+
 def graphql(query: str, variables: dict | None = None) -> dict:
     """Run one GraphQL query against the live CAS GraphQL API and return the
     parsed JSON response (including a top-level "errors" list, if any --
@@ -103,4 +123,4 @@ def graphql(query: str, variables: dict | None = None) -> dict:
             timeout=60,
         )
     response.raise_for_status()
-    return response.json()
+    return _strip_whitespace(response.json())
