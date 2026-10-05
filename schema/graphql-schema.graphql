@@ -1,5 +1,5 @@
 # ================================================================================
-# CAS Lithium API — GraphQL Schema (SDL)
+# CAS GraphQL API — GraphQL Schema (SDL)
 # Version: v0.30.5
 #
 # This file combines every .graphqls schema module from the Lithium API into a
