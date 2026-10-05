@@ -33,8 +33,8 @@ before starting. Never hard-code them — read from environment variables or a s
 curl -s -X POST https://sso.cas.org/as/token.oauth2 \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
-  -d "client_id=$LITHIUM_CLIENT_ID" \
-  -d "client_secret=$LITHIUM_CLIENT_SECRET" \
+  -d "client_id=$CAS_CLIENT_ID" \
+  -d "client_secret=$CAS_CLIENT_SECRET" \
   -d "scope=content.read"
 ```
 
@@ -53,8 +53,8 @@ Extract just the token:
 ```bash
 TOKEN=$(curl -s -X POST https://sso.cas.org/as/token.oauth2 \
   -d grant_type=client_credentials \
-  -d client_id="$LITHIUM_CLIENT_ID" \
-  -d client_secret="$LITHIUM_CLIENT_SECRET" \
+  -d client_id="$CAS_CLIENT_ID" \
+  -d client_secret="$CAS_CLIENT_SECRET" \
   -d scope=content.read | jq -r .access_token)
 ```
 
@@ -69,8 +69,8 @@ def get_token() -> str:
         "https://sso.cas.org/as/token.oauth2",
         data={
             "grant_type": "client_credentials",
-            "client_id": os.environ["LITHIUM_CLIENT_ID"],
-            "client_secret": os.environ["LITHIUM_CLIENT_SECRET"],
+            "client_id": os.environ["CAS_CLIENT_ID"],
+            "client_secret": os.environ["CAS_CLIENT_SECRET"],
             "scope": "content.read",
         },
         timeout=30.0,
