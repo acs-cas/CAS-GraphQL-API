@@ -28,9 +28,11 @@ mcp/          authentication guide for the CAS GraphQL MCP server
 
 ## Installation
 
-Requires Python 3.11+. From this directory:
+Requires Python 3.11+.
 
 ```powershell
+git clone https://github.com/acs-cas/CAS-GraphQL-API.git
+cd CAS-GraphQL-API
 python -m venv venv
 .\venv\Scripts\activate.ps1
 pip install -r requirements.txt
@@ -39,6 +41,8 @@ pip install -r requirements.txt
 On macOS/Linux:
 
 ```bash
+git clone https://github.com/acs-cas/CAS-GraphQL-API.git
+cd CAS-GraphQL-API
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
