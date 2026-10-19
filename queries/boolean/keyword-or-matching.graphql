@@ -1,0 +1,62 @@
+# Matching any of several related terms via whereDocument's "or".
+
+# Simple OR of two synonyms: "microreactor" alone matches 21,296 documents;
+# "micro-reactor" alone matches 6,757; OR'd together, 24,847 -- close to
+# the 28,053 sum of the two, not near either baseline alone.
+query MicroreactorSynonymsOr {
+  documentQuery(
+    whereDocument: {
+      or: [
+        { documentInput: { basicIndex: ["microreactor"] } }
+        { documentInput: { basicIndex: ["micro-reactor"] } }
+      ]
+    }
+    pageParameters: { pageSize: 1 }
+  ) {
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# (Nine nanomaterial-related terms, OR'd) AND (five carbon-dioxide-
+# reduction phrasings, OR'd). Returns 7,443 results, including genuinely
+# on-topic documents.
+query NanomaterialsAndCo2Reduction {
+  documentQuery(
+    whereDocument: {
+      and: [
+        {
+          or: [
+            { documentInput: { basicIndex: ["nanomaterial"] } }
+            { documentInput: { basicIndex: ["nanomaterials"] } }
+            { documentInput: { basicIndex: ["nanoparticle"] } }
+            { documentInput: { basicIndex: ["nanocrystal"] } }
+            { documentInput: { basicIndex: ["nanocluster"] } }
+            { documentInput: { basicIndex: ["nanowire"] } }
+            { documentInput: { basicIndex: ["nanotube"] } }
+            { documentInput: { basicIndex: ["nanosheets"] } }
+            { documentInput: { basicIndex: ["nanostructure"] } }
+          ]
+        }
+        {
+          or: [
+            { documentInput: { basicIndex: ["carbon dioxide reduction"] } }
+            { documentInput: { basicIndex: ["co2 reduction"] } }
+            { documentInput: { basicIndex: ["carbon dioxide electroreduction"] } }
+            { documentInput: { basicIndex: ["electrochemical reduction of carbon dioxide"] } }
+            { documentInput: { basicIndex: ["co2rr"] } }
+          ]
+        }
+      ]
+    }
+    pageParameters: { pageSize: 3 }
+  ) {
+    documents {
+      title
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}

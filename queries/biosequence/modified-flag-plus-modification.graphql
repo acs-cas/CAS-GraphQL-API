@@ -1,5 +1,5 @@
 # Combine the modified boolean flag with a specific modification
-# description filter. Verified against the live API 2026-09-02.
+# description filter.
 query ModifiedPlusModType($input: [BiosequenceInput]) {
   biosequenceQuery(biosequenceInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
     biosequences {

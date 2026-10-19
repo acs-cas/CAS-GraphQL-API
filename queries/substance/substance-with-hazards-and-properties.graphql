@@ -2,7 +2,7 @@
 # designations and physical/chemical properties by traversing nested
 # fields on the returned Substance (this is different from filtering
 # substanceQuery itself with a second top-level input argument).
-# Verified against the live API 2026-09-28 (RN 58-08-2 = caffeine).
+# RN 58-08-2 = caffeine.
 query SubstanceWithHazardsAndProperties($inputs: [SubstanceInput]) {
   substanceQuery(substanceInput: $inputs) {
     substances {

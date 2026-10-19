@@ -1,0 +1,76 @@
+# A few more AND/OR/NOT shapes for the document domain specifically.
+
+# Simple NOT: electrolysis AND NOT haptens. 354,707 results -- just two
+# fewer than "electrolysis" alone (354,709). The two topics barely
+# overlap, so NOT trims a small, real intersection rather than doing
+# nothing.
+query ElectrolysisNotHaptens {
+  documentQuery(
+    whereDocument: {
+      and: [
+        { documentInput: { basicIndex: ["electrolysis"] } }
+        { not: { documentInput: { basicIndex: ["haptens"] } } }
+      ]
+    }
+    pageParameters: { pageSize: 1 }
+  ) {
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# AND of two ORs: (flavor OR extract) AND (turmeric OR curcumin). 22,895
+# results -- far smaller than any of the four individual term counts
+# (flavor 411,951; extract 1,937,482; turmeric 43,124; curcumin 89,541),
+# a real intersection of the two OR'd groups.
+query FlavorExtractAndTurmericCurcumin {
+  documentQuery(
+    whereDocument: {
+      and: [
+        {
+          or: [
+            { documentInput: { basicIndex: ["flavor"] } }
+            { documentInput: { basicIndex: ["extract"] } }
+          ]
+        }
+        {
+          or: [
+            { documentInput: { basicIndex: ["turmeric"] } }
+            { documentInput: { basicIndex: ["curcumin"] } }
+          ]
+        }
+      ]
+    }
+    pageParameters: { pageSize: 1 }
+  ) {
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# OR wrapping a NOT: (flavor AND NOT dye) OR extract. 2,287,958 results --
+# more than "extract" alone (1,937,482) since the OR only adds matches,
+# but less than the simple sum of the two sides, reflecting the real
+# overlap between "flavor" and "extract" documents.
+query FlavorNotDyeOrExtract {
+  documentQuery(
+    whereDocument: {
+      or: [
+        {
+          and: [
+            { documentInput: { basicIndex: ["flavor"] } }
+            { not: { documentInput: { basicIndex: ["dye"] } } }
+          ]
+        }
+        { documentInput: { basicIndex: ["extract"] } }
+      ]
+    }
+    pageParameters: { pageSize: 1 }
+  ) {
+    pageInformation {
+      totalItems
+    }
+  }
+}

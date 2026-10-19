@@ -2,7 +2,7 @@
 # the role/superRole classification of how each substance functions in
 # that document (e.g. reactant, byproduct, therapeutic use). Scoping the
 # document search with substanceInput guarantees the traversed findings
-# include that substance. Verified against the live API 2026-09-01.
+# include that substance.
 query DocWithSubstanceFindings($doc: [DocumentInput], $subs: [SubstanceInput]) {
   documentQuery(documentInput: $doc, substanceInput: $subs, pageParameters: { page: 1, pageSize: 1 }) {
     documents {

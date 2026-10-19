@@ -1,9 +1,8 @@
 # Search for nucleic acid sequences carrying BOTH of two specific
 # modifications (2'-fluoro AND 2'-deoxy substitutions) -- the
 # `modification` field is a list, and multiple entries are AND'd, not
-# OR'd (each entry narrows the result further; confirmed live: 2'-fl alone
-# = 238,861 results, 2'-fl AND 2'-deoxy together = 238,563).
-# Verified against the live API 2026-09-02.
+# OR'd (each entry narrows the result further: 2'-fl alone = 238,861
+# results, 2'-fl AND 2'-deoxy together = 238,563).
 query TwoModifications($input: [BiosequenceInput]) {
   biosequenceQuery(biosequenceInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
     biosequences {

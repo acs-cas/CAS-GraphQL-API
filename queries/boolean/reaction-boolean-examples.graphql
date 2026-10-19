@@ -1,0 +1,438 @@
+# whereReaction boolean operators (AND/OR/NOT), including deep nesting.
+# Query shapes sourced from the API's own automation regression test suite
+# for whereReaction (15 real scenarios, covering reactionParticipant
+# role+RN, conditions (temperature/pressure/duration), named
+# transformations, entryDate, and yield).
+
+# Simple AND: a reactant RN AND a temperature range.
+query ReactantAndTemperatureRange {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: [{ RN: "62107-82-8", role: REACTANT }] } }
+        { reactionInput: { conditions: { temperature: { value: { low: 20, high: 100 }, unit: CELSIUS } } } }
+      ]
+    }
+    pageParameters: { pageSize: 10, page: 1 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        stage
+        reactants { substance { RN displayName } }
+        conditions { temperature }
+      }
+      document { publicationDate }
+      products { yield }
+    }
+    pageInformation { totalItems hasNextPage totalPages pageSize }
+  }
+}
+
+# AND: a catalyst RN AND a pressure range.
+query CatalystCopperAndPressureRange {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: [{ RN: "7440-50-8", role: CATALYST }] } }
+        { reactionInput: { conditions: { pressure: { value: { low: 9, high: 10 }, unit: ATM } } } }
+      ]
+    }
+    pageParameters: { pageSize: 20, page: 1 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        stage
+        catalysts { substance { RN displayName } }
+        conditions { pressure }
+      }
+      products { yield }
+      document { publicationDate }
+    }
+    pageInformation { totalItems totalPages pageSize }
+  }
+}
+
+# AND across three constraints: a reactant, a solvent, and a duration range.
+query TolueneReactantAcetoneSolventDurationRange {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: [{ RN: "108-88-3", role: REACTANT }] } }
+        { reactionInput: { reactionParticipant: [{ RN: "67-64-1", role: SOLVENT }] } }
+        { reactionInput: { conditions: { duration: { value: { low: 1, high: 24 }, unit: HOURS } } } }
+      ]
+    }
+    pageParameters: { pageSize: 15, page: 1 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        stage
+        reactants { substance { RN displayName } }
+        solvents { substance { RN displayName } }
+        conditions { duration }
+      }
+      products { yield }
+      document { publicationDate }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# AND across three distinct reactant RNs, all as REACTANT -- a repeated
+# reactionParticipant constraint inside whereReaction, same AND semantics
+# as a repeated top-level input.
+query MultipleReactantRNsAnd {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: [{ RN: "64-17-5", role: REACTANT }] } }
+        { reactionInput: { reactionParticipant: [{ RN: "67-56-1", role: REACTANT }] } }
+        { reactionInput: { reactionParticipant: [{ RN: "71-23-8", role: REACTANT }] } }
+      ]
+    }
+    pageParameters: { pageSize: 20, page: 1 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages { stage reactants { substance { RN } } }
+      products { yield }
+      document { publicationDate }
+    }
+    pageInformation { totalItems totalPages pageSize }
+  }
+}
+
+# OR nested inside AND, plus a NOT: (water OR acetone as SOLVENT) AND
+# (temperature 20-30C OR 60-80C) AND NOT entered before 2020.
+query SolventOrTemperatureOrNotBefore2020 {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        {
+          or: [
+            { reactionInput: { reactionParticipant: [{ RN: "7732-18-5", role: SOLVENT }] } }
+            { reactionInput: { reactionParticipant: [{ RN: "67-64-1", role: SOLVENT }] } }
+          ]
+        }
+        {
+          or: [
+            { reactionInput: { conditions: { temperature: { value: { low: 20, high: 30 }, unit: CELSIUS } } } }
+            { reactionInput: { conditions: { temperature: { value: { low: 60, high: 80 }, unit: CELSIUS } } } }
+          ]
+        }
+        { not: { reactionInput: { entryDate: { low: "1900", high: "2020" } } } }
+      ]
+    }
+    pageParameters: { pageSize: 15, page: 1 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        stage
+        solvents { substance { RN } }
+        conditions { pressure temperature }
+      }
+      products { yield }
+      document { publicationDate }
+    }
+    pageInformation { totalItems totalPages pageSize }
+  }
+}
+
+# AND plus two NOTs: a reactant, a reagent, excluding a specific catalyst.
+query WithReagentExcludeCatalyst {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: { RN: "62107-82-8" } } }
+        { reactionInput: { reactionParticipant: { RN: "497-19-8", role: REAGENT } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "64-17-5", role: CATALYST } } } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      scheme
+      stages {
+        reagents { substance { RN preferredName } }
+        catalysts { substance { RN preferredName } }
+      }
+      products { yield substance { substance { RN preferredName } } }
+    }
+    pageInformation { totalItems hasNextPage }
+  }
+}
+
+# Same as above, plus a NOT excluding a product yield range.
+query WithReagentExcludeCatalystExcludeYieldRange {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: { RN: "62107-82-8" } } }
+        { reactionInput: { reactionParticipant: { RN: "497-19-8", role: REAGENT } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "64-17-5", role: CATALYST } } } }
+        { not: { reactionInput: { reactionParticipant: { role: PRODUCT, yield: { low: 50, high: 69 } } } } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      scheme
+      stages {
+        reagents { substance { RN preferredName } }
+        catalysts { substance { RN preferredName } }
+      }
+      products { yield substance { substance { RN preferredName } } }
+    }
+    pageInformation { totalItems hasNextPage }
+  }
+}
+
+# Named transformation AND three NOTs: excludes failed reactions, a
+# specific catalyst, and a specific solvent.
+query DielsAlderExcludeFailedCatalystSolvent {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { transformations: DIELS_ALDER_REACTION_AND_RETRO_DIELS_ALDER_REACTION } }
+        { not: { reactionInput: { reactionType: FAILED } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "3375-31-3", role: CATALYST } } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "108-88-3", role: SOLVENT } } } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      transformations { name }
+      stages {
+        catalysts { substance { RN preferredName } }
+        solvents { substance { RN preferredName } }
+      }
+      products { yield substance { substance { RN preferredName } } }
+    }
+    pageInformation { totalItems hasNextPage }
+  }
+}
+
+# Same as above, plus an entryDate range.
+query DielsAlderExcludeFailedCatalystSolventEntryDateRange {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { transformations: DIELS_ALDER_REACTION_AND_RETRO_DIELS_ALDER_REACTION } }
+        { reactionInput: { entryDate: { low: "2025", high: "2026" } } }
+        { not: { reactionInput: { reactionType: FAILED } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "3375-31-3", role: CATALYST } } } }
+        { not: { reactionInput: { reactionParticipant: { RN: "108-88-3", role: SOLVENT } } } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      entryDate
+      reactionType
+      transformations { name }
+      stages {
+        catalysts { substance { RN preferredName } }
+        solvents { substance { RN preferredName } }
+      }
+      products { yield substance { substance { RN preferredName } } }
+    }
+    pageInformation { totalItems hasNextPage }
+  }
+}
+
+# Simple OR: a catalyst OR a reactant.
+query CatalystCopperOrReactantToluene {
+  reactionQuery(
+    whereReaction: {
+      or: [
+        { reactionInput: { reactionParticipant: [{ RN: "7440-50-8", role: CATALYST }] } }
+        { reactionInput: { reactionParticipant: [{ RN: "108-88-3", role: REACTANT }] } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        catalysts { substance { RN displayName } }
+        reactants { substance { RN displayName } }
+      }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Simple NOT: excludes a specific solvent.
+query NotSolventAcetone {
+  reactionQuery(
+    whereReaction: { not: { reactionInput: { reactionParticipant: [{ RN: "67-64-1", role: SOLVENT }] } } }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages { solvents { substance { RN displayName } } }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# OR of two ANDs: (toluene reactant AND acetone solvent) OR (ethanol
+# reactant AND water solvent).
+query TolueneAcetoneOrEthanolWater {
+  reactionQuery(
+    whereReaction: {
+      or: [
+        {
+          and: [
+            { reactionInput: { reactionParticipant: [{ RN: "108-88-3", role: REACTANT }] } }
+            { reactionInput: { reactionParticipant: [{ RN: "67-64-1", role: SOLVENT }] } }
+          ]
+        }
+        {
+          and: [
+            { reactionInput: { reactionParticipant: [{ RN: "64-17-5", role: REACTANT }] } }
+            { reactionInput: { reactionParticipant: [{ RN: "7732-18-5", role: SOLVENT }] } }
+          ]
+        }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 15 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        reactants { substance { RN displayName } }
+        solvents { substance { RN displayName } }
+      }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# NOT wrapping an OR: excludes reactions matching either a temperature
+# range or a pressure range.
+query NotTemperatureOrPressureRange {
+  reactionQuery(
+    whereReaction: {
+      not: {
+        or: [
+          { reactionInput: { conditions: { temperature: { value: { low: 20, high: 30 }, unit: CELSIUS } } } }
+          { reactionInput: { conditions: { pressure: { value: { low: 9, high: 10 }, unit: ATM } } } }
+        ]
+      }
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages { conditions { temperature pressure } }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# AND containing a nested OR, plus a NOT: a reactant AND (a short OR a
+# long duration range) AND NOT a specific catalyst.
+query WithDurationOrExcludeCatalystCopper {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        { reactionInput: { reactionParticipant: [{ RN: "62107-82-8", role: REACTANT }] } }
+        {
+          or: [
+            { reactionInput: { conditions: { duration: { value: { low: 1, high: 6 }, unit: HOURS } } } }
+            { reactionInput: { conditions: { duration: { value: { low: 12, high: 24 }, unit: HOURS } } } }
+          ]
+        }
+        { not: { reactionInput: { reactionParticipant: [{ RN: "7440-50-8", role: CATALYST }] } } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        reactants { substance { RN displayName } }
+        catalysts { substance { RN displayName } }
+        conditions { duration }
+      }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}
+
+# Deep nesting: AND( OR( AND(reactant,catalyst), AND(reactant,reactant) ),
+# NOT( OR(failed, high-pressure) ) ) -- two alternative reaction pathways,
+# both still subject to the same exclusions.
+query DeepNestedAlcoholPathwaysExcludeFailedOrHighPressure {
+  reactionQuery(
+    whereReaction: {
+      and: [
+        {
+          or: [
+            {
+              and: [
+                { reactionInput: { reactionParticipant: [{ RN: "64-17-5", role: REACTANT }] } }
+                { reactionInput: { reactionParticipant: [{ RN: "7440-50-8", role: CATALYST }] } }
+              ]
+            }
+            {
+              and: [
+                { reactionInput: { reactionParticipant: [{ RN: "67-56-1", role: REACTANT }] } }
+                { reactionInput: { reactionParticipant: [{ RN: "71-23-8", role: REACTANT }] } }
+              ]
+            }
+          ]
+        }
+        {
+          not: {
+            or: [
+              { reactionInput: { reactionType: FAILED } }
+              { reactionInput: { conditions: { pressure: { value: { low: 9, high: 10 }, unit: ATM } } } }
+            ]
+          }
+        }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 20 }
+  ) {
+    reactions {
+      id
+      reactionType
+      stages {
+        reactants { substance { RN displayName } }
+        catalysts { substance { RN displayName } }
+        conditions { pressure }
+      }
+      products { yield }
+    }
+    pageInformation { totalItems }
+  }
+}

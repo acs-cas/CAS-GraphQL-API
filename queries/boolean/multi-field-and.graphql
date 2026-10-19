@@ -1,0 +1,27 @@
+# Multiple fields on a single input object are also AND'ed. Scoping
+# documentQuery by substanceInput with BOTH numberOfComponents.low: 5 AND
+# molecularWeight.high: 200 together returns only 4 documents -- a
+# substance with 5+ structural components AND a molecular weight under
+# 200 g/mol is a narrow, specific combination (most multi-component
+# substances are heavier than that). Note: the single-field baselines for
+# this particular combination (numberOfComponents alone, molecularWeight
+# alone) time out when queried unscoped against the 248M-document domain
+# -- an unscoped broad cross-domain filter is slow, the same
+# characteristic documented for propertyQuery/substanceQuery elsewhere in
+# this project. Scoping both fields together (as below) is what keeps
+# this fast.
+query MultiFieldAnd {
+  documentQuery(
+    substanceInput: { numberOfComponents: { low: 5 }, molecularWeight: { high: 200 } }
+    pageParameters: { page: 1, pageSize: 2 }
+  ) {
+    documents {
+      title
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Result (this query): totalItems: 4

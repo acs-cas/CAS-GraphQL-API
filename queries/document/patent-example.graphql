@@ -1,6 +1,5 @@
 # Search patents by title keyword, selecting patent-specific fields via an
 # inline fragment on the concrete Patent type.
-# Verified against the live API 2026-09-01.
 query PatentExample($doc: [DocumentInput]) {
   documentQuery(documentInput: $doc, pageParameters: { page: 1, pageSize: 2 }) {
     documents {

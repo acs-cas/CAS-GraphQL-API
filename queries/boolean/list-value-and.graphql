@@ -1,0 +1,27 @@
+# The single most counter-intuitive implicit-AND case: a list-valued
+# field like DocumentInput.language reads as if it should mean "any of
+# these languages" (OR), but it is AND'ed like everything else. ENGLISH
+# alone matches ~86.9M documents; CHINESE alone matches ~20.7M; the two
+# together (language: [ENGLISH, CHINESE]) match only 3,677 -- documents
+# whose own language field lists BOTH languages (e.g. a bilingual
+# abstract/full-text pairing), not the ~107M-document union of either
+# language alone.
+query ListValueAnd {
+  documentQuery(
+    documentInput: { language: [ENGLISH, CHINESE] }
+    pageParameters: { page: 1, pageSize: 2 }
+  ) {
+    documents {
+      title
+      language
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Baselines used for comparison (run separately):
+# documentQuery(documentInput: { language: [ENGLISH] }) -> totalItems: 86882615
+# documentQuery(documentInput: { language: [CHINESE] }) -> totalItems: 20697481
+# combined (this query)                                  -> totalItems: 3677

@@ -1,0 +1,24 @@
+# A repeated top-level input -- the same input type supplied as a list --
+# is also AND'ed, i.e. an intersection, not "any element matches". Two
+# distinct conceptInput entries ("cancer", "pharmaceutical" -- the latter
+# resolves to the concept "Drugs") each independently match hundreds of
+# thousands of documents, but the array [{name:"cancer"},{name:"pharmaceutical"}]
+# together returns only documents tagged with BOTH concepts.
+query RepeatedInputAnd {
+  documentQuery(
+    conceptInput: [{ name: "cancer" }, { name: "pharmaceutical" }]
+    pageParameters: { page: 1, pageSize: 2 }
+  ) {
+    documents {
+      title
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Baselines used for comparison (run separately):
+# documentQuery(conceptInput: { name: "cancer" })        -> totalItems: 388583
+# documentQuery(conceptInput: { name: "pharmaceutical" }) -> totalItems: 220919
+# combined array (this query)                             -> totalItems: 11353

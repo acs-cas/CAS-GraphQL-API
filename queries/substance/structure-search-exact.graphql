@@ -1,4 +1,4 @@
-# Exact structure search by SMILES. Verified against the live API 2026-09-28.
+# Exact structure search by SMILES.
 # Note: EXA ("exact") does not mean "exactly one result" -- it matches the
 # same base connectivity across isotope-labeled variants, ionized forms,
 # and derivative substances (homopolymer, etc.), not only the single

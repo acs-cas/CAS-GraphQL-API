@@ -1,6 +1,6 @@
 # Substructure search: find substances containing a given fragment.
-# Verified against the live API 2026-09-28. Note: a bare benzene ring
-# (c1ccccc1) as the substructure timed out -- too common/broad a fragment.
+# Note: a bare benzene ring (c1ccccc1) as the substructure timed out --
+# too common/broad a fragment.
 # A larger, more specific substructure (this acridine-like tricyclic
 # core) responds quickly.
 query SubstructureSearch($input: [SubstanceInput]) {

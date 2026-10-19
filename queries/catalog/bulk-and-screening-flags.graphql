@@ -1,5 +1,5 @@
 # Filter supplier listings by the isBulkAvailable / isScreeningCompound
-# boolean flags. Verified against the live API 2026-09-02.
+# boolean flags.
 query CatalogBulkScreening($input: [CatalogInput]) {
   catalogQuery(catalogInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
     catalogItems {

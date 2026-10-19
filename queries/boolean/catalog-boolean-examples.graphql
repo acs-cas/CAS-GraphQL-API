@@ -1,0 +1,62 @@
+# whereCatalog boolean operators (AND/OR/NOT). Query shapes sourced from
+# the API's own automation regression test suite for whereCatalog.
+
+# Simple whereCatalog OR -- matches either condition.
+query WhereCatalogSimpleOr {
+  catalogQuery(
+    whereCatalog: {
+      or: [
+        { catalogInput: { supplierName: "Sigma" } }
+        { catalogInput: { RN: "142905" } }
+      ]
+    }
+    pageParameters: { page: 1, pageSize: 100 }
+  ) {
+    catalogItems {
+      orderNumber
+      name
+      supplierName
+      substance {
+        RN
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# NOT wrapping an AND of two conditions -- excludes items matching both
+# from an otherwise RN-scoped result set. Of 18 listings for RN
+# 1152909-13-1, exactly 3 are excluded (A2B Chem Product List,
+# AbaChemScene-Backordered, AbaChemScene-US Stock -- all genuinely both
+# SYNTHESIS_ON_DEMAND and isScreeningCompound:true). Two synthesis-on-
+# demand-only suppliers and two screening-compound-only suppliers are
+# correctly kept, since the inner AND requires both at once.
+query WhereCatalogNotContainsAnd {
+  catalogQuery(
+    catalogInput: [{ RN: "1152909-13-1" }]
+    whereCatalog: {
+      not: {
+        and: [
+          { catalogInput: { availability: SYNTHESIS_ON_DEMAND } }
+          { catalogInput: { isScreeningCompound: true } }
+        ]
+      }
+    }
+    pageParameters: { page: 1, pageSize: 10 }
+  ) {
+    catalogItems {
+      orderNumber
+      name
+      supplierName
+      stockAvailability
+      substance {
+        RN
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}

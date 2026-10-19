@@ -1,6 +1,6 @@
 # Screen a compound for GHS hazard designations across regulatory authorities, by CAS
 # Registry Number -- supports SDS generation or supply-chain risk screening.
-# Verified against the live API 2026-09-30 (Benzene, RN 71-43-2, 443 total designations).
+# Example: benzene, RN 71-43-2, returns 443 total designations.
 query hazardQuery($rn: String) {
   substanceQuery(substanceInput: { RN: $rn }) {
     substances {

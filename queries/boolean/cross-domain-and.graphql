@@ -1,0 +1,26 @@
+# Combining a documentInput constraint with a conceptInput constraint at
+# top level narrows results with AND -- a match must satisfy both, not
+# either. docType: JOURNAL alone matches ~84.5M documents; conceptInput
+# scoped to "cancer" alone matches ~388K; the two together return ~262K,
+# consistent with an intersection of the two sets, not their union
+# (~84.9M).
+query CrossDomainAnd {
+  documentQuery(
+    documentInput: { docType: JOURNAL }
+    conceptInput: { name: "cancer" }
+    pageParameters: { page: 1, pageSize: 2 }
+  ) {
+    documents {
+      title
+      docType
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Baselines used for comparison (run separately):
+# documentQuery(documentInput: { docType: JOURNAL }) -> totalItems: 84514771
+# documentQuery(conceptInput: { name: "cancer" })    -> totalItems: 388583
+# combined (this query)                              -> totalItems: 261683

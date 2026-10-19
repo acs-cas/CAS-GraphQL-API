@@ -1,6 +1,5 @@
 # Look up a concept by name and traverse its thesaurus hierarchy
-# (broader/narrower concepts) and synonyms. Verified against the live API
-# 2026-09-02.
+# (broader/narrower concepts) and synonyms.
 query ConceptByName($input: ConceptInput) {
   conceptQuery(conceptInput: $input, pageParameters: { page: 1, pageSize: 3 }) {
     concept {

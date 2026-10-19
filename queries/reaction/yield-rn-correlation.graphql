@@ -1,8 +1,7 @@
-# Confirms that a `yield` filter inside a reactionParticipant object
-# correlates to THAT SPECIFIC RN's yield within a multi-product reaction,
-# not to any product's yield in the reaction. Reaction 11750902 has two
-# products: RN 1262976-97-5 at 86% yield, and RN 1262976-99-7 at 10%
-# yield. Verified against the live API 2026-09-02.
+# A `yield` filter inside a reactionParticipant object correlates to THAT
+# SPECIFIC RN's yield within a multi-product reaction, not to any
+# product's yield in the reaction. Reaction 11750902 has two products:
+# RN 1262976-97-5 at 86% yield, and RN 1262976-99-7 at 10% yield.
 query YieldRNCorrelation($input: [ReactionInput]) {
   reactionQuery(reactionInput: $input) {
     reactions {

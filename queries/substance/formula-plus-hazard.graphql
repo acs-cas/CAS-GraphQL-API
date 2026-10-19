@@ -1,8 +1,5 @@
-# Narrow a substanceInput search by a cross-domain hazardInput. Confirms
-# the substanceQuery cross-domain combination bug (substanceInput +
-# hazardInput/propertyInput/documentInput/catalogInput -> INTERNAL_ERROR)
-# is fixed as of this date -- it previously errored on every combination.
-# Verified against the live API 2026-09-23.
+# Narrow a substanceInput search by a cross-domain hazardInput. substanceInput
+# combines correctly with hazardInput/propertyInput/documentInput/catalogInput.
 query FormulaPlusHazard($s: [SubstanceInput], $h: [HazardInput]) {
   substanceQuery(substanceInput: $s, hazardInput: $h, pageParameters: { page: 1, pageSize: 5 }) {
     substances {

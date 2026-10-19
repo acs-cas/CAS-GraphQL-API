@@ -1,0 +1,92 @@
+# whereConcept wraps and/or/not around conceptInput clauses, evaluated
+# entirely within the concept domain and translated to matching documents.
+# Query shapes sourced from the API's own automation regression test suite
+# (a documentQuery + whereConcept fix).
+
+# AND of two distinct, mutually-exclusive concept names -> 0 results (no
+# single document is tagged with both unrelated concepts).
+query WhereConceptAndTwoDistinct {
+  documentQuery(
+    whereConcept: {
+      and: [
+        { conceptInput: { name: "N-ras proteins" } }
+        { conceptInput: { name: "c-Ha-ras proteins" } }
+        { not: { conceptInput: { name: "c-Ki-ras proteins" } } }
+      ]
+    }
+  ) {
+    documents {
+      id
+      title
+      docType
+      publicationDate
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# OR across the same two concepts (still excluding the third via NOT) ->
+# a realistic subset, not the whole corpus.
+query WhereConceptOrTwoDistinct {
+  documentQuery(
+    whereConcept: {
+      and: [
+        {
+          or: [
+            { conceptInput: { name: "N-ras proteins" } }
+            { conceptInput: { name: "c-Ha-ras proteins" } }
+          ]
+        }
+        { not: { conceptInput: { name: "c-Ki-ras proteins" } } }
+      ]
+    }
+  ) {
+    documents {
+      id
+      title
+      docType
+      publicationDate
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Automation suite's recorded result: AND -> 0 results; OR -> a few
+# thousand results (a realistic subset, not the ~14M-document whole corpus).
+
+# Advanced: the same and/or/not shape, but evaluated at the DOCUMENT level
+# via whereDocument instead of whereConcept. whereConcept's NOT only rules
+# out candidate concepts (a document tagged with N-ras AND c-Ki-ras would
+# still be returned above); this version excludes any document that
+# mentions c-Ki-ras at all, even if it also mentions N-ras or c-Ha-ras.
+# More expensive than the whereConcept form -- use only when document-level
+# exclusion is actually required.
+query WhereDocumentExcludesConcept {
+  documentQuery(
+    whereDocument: {
+      and: [
+        {
+          or: [
+            { conceptInput: { name: "N-ras proteins" } }
+            { conceptInput: { name: "c-Ha-ras proteins" } }
+          ]
+        }
+        { not: { conceptInput: { name: "c-Ki-ras proteins" } } }
+      ]
+    }
+  ) {
+    documents {
+      id
+      title
+      docType
+      publicationDate
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
