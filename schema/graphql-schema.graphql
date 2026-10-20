@@ -2,7 +2,7 @@
 # CAS GraphQL API — GraphQL Schema (SDL)
 # Version: v0.30.5
 #
-# This file combines every .graphqls schema module from the Lithium API into a
+# This file combines every .graphqls schema module from the CAS GraphQL API into a
 # single, ordered, read-through reference. It is generated for publishing —
 # the source of truth is the versioned multi-file schema shipped with the API.
 #
@@ -38,8 +38,7 @@ scalar Date @specifiedBy(url: "https://tools.ietf.org/html/rfc3339")
 
 scalar JSON
 
-type Query {
-}
+type Query
 
 enum AuthModule {
     DOCUMENT
@@ -73,6 +72,8 @@ directive @ValidateReactionParticipant on INPUT_FIELD_DEFINITION
 directive @ValidatePersonInfo on INPUT_FIELD_DEFINITION
 
 directive @ValidateNotClause on INPUT_FIELD_DEFINITION
+
+directive @ValidateWhereClause on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 # ================================================================================
 # 3. SHARED RANGE INPUTS
@@ -241,6 +242,11 @@ extend type Query {
         hazardInput: [HazardInput]
         documentInput: [DocumentInput]
         catalogInput: [CatalogInput]
+        whereSubstance: WhereSubstance @ValidateWhereClause
+        whereProperty: WhereProperty @ValidateWhereClause
+        whereHazard: WhereHazard @ValidateWhereClause
+        whereDocument: WhereDocument @ValidateWhereClause
+        whereCatalog: WhereCatalog @ValidateWhereClause
         pageParameters: PageParameters
     ): SubstancePage
 }
@@ -792,6 +798,10 @@ extend type Query {
         hazardInput: [HazardInput]
         documentInput: [DocumentInput]
         catalogInput: [CatalogInput]
+        whereBiosequence: WhereBiosequence @ValidateWhereClause
+        whereHazard: WhereHazard @ValidateWhereClause
+        whereDocument: WhereDocument @ValidateWhereClause
+        whereCatalog: WhereCatalog @ValidateWhereClause
         pageParameters: PageParameters
     ): BiosequencePage
 }
@@ -1055,7 +1065,11 @@ type GenbankFeature {
 
 extend type Query {
     # Searches CAS-indexed chemical reactions by internal reaction ID, reaction type (full/half/failed), named transformation, participants, reaction scheme, or entry date. Returns matching reactions including products, stages, procedure text, and scale.
-    reactionQuery(reactionInput: [ReactionInput], pageParameters: PageParameters): ReactionPage
+    reactionQuery(
+        reactionInput: [ReactionInput]
+        whereReaction: WhereReaction @ValidateWhereClause
+        pageParameters: PageParameters
+    ): ReactionPage
 }
 
 # Defines search inputs to query reactions.  Multiple inputs are evaluated with AND by default.
@@ -2007,7 +2021,11 @@ enum PropertyName {
 
 extend type Query {
     # Searches GHS hazard designations by substance CAS Registry Number or hazard code (e.g., H225). Returns matching hazard designations, including signal word, pictograms, hazard statements, and the issuing authority/jurisdiction.
-    hazardQuery(hazardInput: [HazardInput], pageParameters: PageParameters): HazardDesignationPage
+    hazardQuery(
+        hazardInput: [HazardInput]
+        whereHazard: WhereHazard @ValidateWhereClause
+        pageParameters: PageParameters
+    ): HazardDesignationPage
 }
 
 # Describes the search inputs to query hazard designations. Multiple inputs are evaluated with AND by default.
@@ -2235,7 +2253,11 @@ enum HazardCode {
 
 extend type Query {
     # Searches commercial supplier catalog listings for a substance by CAS Registry Number, supplier name, purity, quantity, availability/stock status, or shipping timeframe. Returns matching catalog items (product name, pricing/quantity offerings, purity, supplier links, and the linked substance).
-    catalogQuery (catalogInput: [CatalogInput], pageParameters: PageParameters): CatalogItemPage
+    catalogQuery(
+        catalogInput: [CatalogInput]
+        whereCatalog: WhereCatalog @ValidateWhereClause
+        pageParameters: PageParameters
+    ): CatalogItemPage
 }
 
 # Describes the search inputs to query catalogs. Multiple inputs are evaluated with AND by default.
@@ -2396,7 +2418,11 @@ enum Purity {
 
 extend type Query {
     # Searches the CAS controlled vocabulary/thesaurus of subject concepts (e.g., reaction types, apparatus, techniques) name, subject category, or scope note. Returns matching concepts with their synonyms and broader/narrower/related-concept relationships. If the concepts are being used to create a document query, it is recommended that query for children of a particular concept for comprehensiveness.
-    conceptQuery(conceptInput: ConceptInput, pageParameters: PageParameters): ConceptPage
+    conceptQuery(
+        conceptInput: ConceptInput
+        whereConcept: WhereConcept @ValidateWhereClause
+        pageParameters: PageParameters
+    ): ConceptPage
 }
 
 # Describes search inputs to query concepts and their hierarchy within the CAS Lexicon.
@@ -2513,6 +2539,10 @@ extend type Query {
         substanceInput: [SubstanceInput],
         conceptInput: [ConceptInput],
         biosequenceInput: [BiosequenceInput],
+        whereDocument: WhereDocument @ValidateWhereClause
+        whereSubstance: WhereSubstance @ValidateWhereClause
+        whereConcept: WhereConcept @ValidateWhereClause
+        whereBiosequence: WhereBiosequence @ValidateWhereClause
         pageParameters: PageParameters
     ): DocumentPage
 }
@@ -3561,4 +3591,331 @@ type ReactionFinding implements DocumentFinding {
 type Role {
     description: String
     code: String
+}
+
+
+# ==============================================================================
+# Boolean search — explicit AND / OR / NOT clauses
+# Source: nonprod/*.graphqls upstream. Not yet enabled in production.
+# ==============================================================================
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereBiosequence {
+    # Logical AND – all clauses must match.
+    and: [BiosequenceAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [BiosequenceOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: BiosequenceNotClause @ValidateNotClause
+}
+
+input BiosequenceAndClause {
+    # Logical OR – at least one clause must match.
+    or: [BiosequenceOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: BiosequenceNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    biosequenceInput: BiosequenceInput
+}
+
+input BiosequenceOrClause {
+    # Logical AND – all clauses must match.
+    and: [BiosequenceAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: BiosequenceNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    biosequenceInput: BiosequenceInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input BiosequenceNotClause {
+    # Logical AND – all clauses must match.
+    and: [BiosequenceAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [BiosequenceOrClause!]
+    # inputs - treated as AND if multiple
+    biosequenceInput: BiosequenceInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereCatalog {
+    # Logical AND – all clauses must match.
+    and: [CatalogAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [CatalogOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: CatalogNotClause @ValidateNotClause
+}
+
+input CatalogAndClause {
+    # Logical OR – at least one clause must match.
+    or: [CatalogOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: CatalogNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+}
+
+input CatalogOrClause {
+    # Logical AND – all clauses must match.
+    and: [CatalogAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: CatalogNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input CatalogNotClause {
+    # Logical AND – all clauses must match.
+    and: [CatalogAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [CatalogOrClause!]
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereConcept {
+    # Logical AND – all clauses must match.
+    and: [ConceptAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [ConceptOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ConceptNotClause @ValidateNotClause
+}
+
+input ConceptAndClause {
+    # Logical OR – at least one clause must match.
+    or: [ConceptOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ConceptNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    conceptInput: ConceptInput
+}
+
+input ConceptOrClause {
+    # Logical AND – all clauses must match.
+    and: [ConceptAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ConceptNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    conceptInput: ConceptInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input ConceptNotClause {
+    # Logical AND – all clauses must match.
+    and: [ConceptAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [ConceptOrClause!]
+    # inputs - treated as AND if multiple
+    conceptInput: ConceptInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereDocument {
+    # Logical AND – all clauses must match.
+    and: [DocumentAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [DocumentOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: DocumentNotClause @ValidateNotClause
+}
+
+input DocumentAndClause {
+    # Logical OR – at least one clause must match.
+    or: [DocumentOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: DocumentNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    conceptInput: ConceptInput
+    documentInput: DocumentInput
+    substanceInput: SubstanceInput
+}
+
+input DocumentOrClause {
+    # Logical AND – all clauses must match.
+    and: [DocumentAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: DocumentNotClause @ValidateNotClause
+    # inputs - treated as OR if multiple
+    conceptInput: ConceptInput
+    documentInput: DocumentInput
+    substanceInput: SubstanceInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input DocumentNotClause {
+    # Logical AND – all clauses must match.
+    and: [DocumentAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [DocumentOrClause!]
+    # input - only one input may be set
+    conceptInput: ConceptInput
+    documentInput: DocumentInput
+    substanceInput: SubstanceInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereHazard {
+    # Logical AND – all clauses must match.
+    and: [HazardAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [HazardOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: HazardNotClause @ValidateNotClause
+}
+
+input HazardAndClause {
+    # Logical OR – at least one clause must match.
+    or: [HazardOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: HazardNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    hazardInput: HazardInput
+}
+
+input HazardOrClause {
+    # Logical AND – all clauses must match.
+    and: [HazardAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: HazardNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    hazardInput: HazardInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input HazardNotClause {
+    # Logical AND – all clauses must match.
+    and: [HazardAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [HazardOrClause!]
+    # inputs - treated as AND if multiple
+    hazardInput: HazardInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereReaction {
+    # Logical AND – all clauses must match.
+    and: [ReactionAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [ReactionOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ReactionNotClause @ValidateNotClause
+}
+
+input ReactionAndClause {
+    # Logical OR – at least one clause must match.
+    or: [ReactionOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ReactionNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    reactionInput: ReactionInput
+}
+
+input ReactionOrClause {
+    # Logical AND – all clauses must match.
+    and: [ReactionAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: ReactionNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    reactionInput: ReactionInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input ReactionNotClause {
+    # Logical AND – all clauses must match.
+    and: [ReactionAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [ReactionOrClause!]
+    # inputs - treated as AND if multiple
+    reactionInput: ReactionInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereSubstance {
+    # Logical AND – all clauses must match.
+    and: [SubstanceAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [SubstanceOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: SubstanceNotClause @ValidateNotClause
+}
+
+input SubstanceAndClause {
+    # Logical OR – at least one clause must match.
+    or: [SubstanceOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: SubstanceNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+    substanceInput: SubstanceInput
+}
+
+input SubstanceOrClause {
+    # Logical AND – all clauses must match.
+    and: [SubstanceAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: SubstanceNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+    substanceInput: SubstanceInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input SubstanceNotClause {
+    # Logical AND – all clauses must match.
+    and: [SubstanceAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [SubstanceOrClause!]
+    # inputs - treated as AND if multiple
+    catalogInput: CatalogInput
+    substanceInput: SubstanceInput
+}
+
+# Top-level expression.
+# Exactly one of { and, or, not } must be set.
+input WhereProperty {
+    # Logical AND – all clauses must match.
+    and: [PropertyAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [PropertyOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: PropertyNotClause @ValidateNotClause
+}
+
+input PropertyAndClause {
+    # Logical OR – at least one clause must match.
+    or: [PropertyOrClause!]
+    # Logical NOT – the clause must NOT match.
+    not: PropertyNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    propertyInput: PropertyInput
+}
+
+input PropertyOrClause {
+    # Logical AND – all clauses must match.
+    and: [PropertyAndClause!]
+    # Logical NOT – the clause must NOT match.
+    not: PropertyNotClause @ValidateNotClause
+    # inputs - treated as AND if multiple
+    propertyInput: PropertyInput
+}
+
+# Only one of the fields below may be set - a NOT applies to a single operand.
+input PropertyNotClause {
+    # Logical AND – all clauses must match.
+    and: [PropertyAndClause!]
+    # Logical OR – at least one clause must match.
+    or: [PropertyOrClause!]
+    # inputs - treated as AND if multiple
+    propertyInput: PropertyInput
 }
