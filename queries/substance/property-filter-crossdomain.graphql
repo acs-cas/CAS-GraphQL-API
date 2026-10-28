@@ -1,0 +1,30 @@
+# displayProperties works the same way on substances matched through any
+# top-level input combination, e.g. the molecularFormula + hazardInput pair
+# from formula-plus-hazard.graphql.
+query CrossDomainWithPropertyFilter($s: [SubstanceInput], $h: [HazardInput]) {
+  substanceQuery(substanceInput: $s, hazardInput: $h, pageParameters: { page: 1, pageSize: 3 }) {
+    substances {
+      RN
+      preferredName
+      propertyPage(displayProperties: [MELTING_POINT]) {
+        properties {
+          name
+          value
+          isPreferredValue
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+    pageInformation {
+      totalItems
+    }
+  }
+}
+
+# Variables:
+# { "s": [{ "molecularFormula": "C9H8O4" }], "h": [{ "code": "H319" }] }
+#
+# Same 51 matches as formula-plus-hazard.graphql, now with each result's
+# propertyPage narrowed to MELTING_POINT only.
