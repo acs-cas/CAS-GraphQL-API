@@ -1,0 +1,25 @@
+# Restrict a substance's propertyPage to only the property type that was
+# searched for, instead of every property type reported for it.
+query ShowSearchedPropertyOnly {
+  substanceQuery(
+    propertyInput: { RN: "58-08-2", name: MELTING_POINT, showSearchedPropertyOnly: true }
+  ) {
+    substances {
+      RN
+      propertyPage(pageParameters: { page: 1, pageSize: 5 }) {
+        properties {
+          name
+          value
+          isPreferredValue
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+  }
+}
+
+# Caffeine (RN 58-08-2) has 86 reported melting-point values and dozens of
+# other property types (density, solubility, etc.), but with
+# showSearchedPropertyOnly: true only MELTING_POINT values come back.

@@ -1,0 +1,26 @@
+# When both showSearchedPropertyOnly and displayProperties are supplied,
+# displayProperties wins.
+query FilterPrecedence {
+  substanceQuery(
+    propertyInput: { RN: "50-78-2", name: DENSITY, showSearchedPropertyOnly: true }
+  ) {
+    substances {
+      RN
+      propertyPage(displayProperties: [MELTING_POINT]) {
+        properties {
+          name
+          value
+          isPreferredValue
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+  }
+}
+
+# Even though the search itself is scoped to DENSITY with
+# showSearchedPropertyOnly: true, the response contains only MELTING_POINT
+# values (109 total for aspirin, RN 50-78-2) because displayProperties takes
+# precedence.

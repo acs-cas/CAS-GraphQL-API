@@ -13,6 +13,9 @@ executable** against the real API, not a static transcript.
 *Boolean search support (`03_Boolean_Search.ipynb`) is coming soon and not yet live against the
 production API.*
 
+*`propertyQuery` (`07_Property_Query.ipynb`) is deprecated and will be removed on November 20,
+2026. Migrate to `propertyInput` on `substanceQuery` (`04_Substance_Query.ipynb`).*
+
 The CAS GraphQL API supports workflow integration, chemical research, machine learning, and
 cheminformatics use cases. Learn more about workflow integration solutions from
 __[CAS Custom Services℠](https://www.cas.org/solutions/cas-custom-services/workflow-integration)__.

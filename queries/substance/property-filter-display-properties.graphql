@@ -1,0 +1,25 @@
+# Choose which property type(s) propertyPage displays, independent of how the
+# substance was matched. displayProperties takes a plain list of PropertyName
+# values, not a PropertyInput -- no RN or value-range filter needed.
+query DisplayProperties {
+  substanceQuery(substanceInput: { RN: "50-78-2" }) {
+    substances {
+      RN
+      propertyPage(displayProperties: [MELTING_POINT, DENSITY]) {
+        properties {
+          name
+          value
+          isPreferredValue
+        }
+        pageInformation {
+          totalItems
+        }
+      }
+    }
+  }
+}
+
+# Aspirin (RN 50-78-2) has 124 combined DENSITY/MELTING_POINT values, out of
+# its much larger full property set. Ordering: preferred values first (DENSITY
+# before MELTING_POINT alphabetically among the preferred set), then every
+# remaining non-preferred value grouped the same way.

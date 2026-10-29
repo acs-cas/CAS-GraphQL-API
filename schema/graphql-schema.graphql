@@ -344,7 +344,11 @@ interface Substance {
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
 }
 
 enum SubstanceClass {
@@ -473,7 +477,11 @@ type SingleComponentSubstance implements Substance & Component & StructureRepres
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
     # Note providing additional descriptive information about the component.
     notes: String
     # Substance classifications of components (e.g., polymer, alloy, manual registration).
@@ -565,7 +573,11 @@ type MultiComponentSubstance implements Substance & StructureRepresentation {
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
     # Canonical SMILES string representing the structure.
     canonicalSmiles: String
     # Isomeric SMILES string including stereochemistry and isotopic labeling
@@ -655,7 +667,11 @@ type AlloySubstance implements Substance & StructureRepresentation{
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
     # Canonical SMILES string representing the structure.
     canonicalSmiles: String
     # Isomeric SMILES string including stereochemistry and isotopic labeling
@@ -745,7 +761,11 @@ type TabularInorganicSubstance implements Substance & StructureRepresentation {
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
     # Canonical SMILES string representing the structure.
     canonicalSmiles: String
     # Isomeric SMILES string including stereochemistry and isotopic labeling
@@ -927,7 +947,11 @@ type Biosequence implements Substance & StructureRepresentation {
     # Catalogs referencing this substance.
     catalogItemPage(pageParameters: PageParameters): CatalogItemPage
     # Properties associated with the substance (physical, chemical), including experimental and predicted.
-    propertyPage(pageParameters: PageParameters): PropertyPage
+    propertyPage(
+        pageParameters: PageParameters
+        # Properties to display. Select one or more; omit to show all.
+        displayProperties: [PropertyName]
+    ): PropertyPage
     # Canonical SMILES string representing the structure.
     canonicalSmiles: String
     # Isomeric SMILES string including stereochemistry and isotopic labeling
@@ -1926,6 +1950,9 @@ input PropertyInput {
     value: FloatRange @ValidateRange
     # Flag to include predicted property values alongside experimental values in results.
     isPredicted: Boolean
+    # When true, substances display only the properties searched for here. Overridden by
+    # `displayProperties` on propertyPage. Default shows all properties.
+    showSearchedPropertyOnly: Boolean
 }
 
 type SubstanceProperties {
