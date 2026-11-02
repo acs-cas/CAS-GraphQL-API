@@ -10,9 +10,6 @@ Authentication, GraphiQL, Boolean search, and each of the 8 query domains), plus
 Use Cases notebook and a worked Retrosynthesis example. Every query example is **live and
 executable** against the real API, not a static transcript.
 
-*Boolean search support (`03_Boolean_Search.ipynb`) is coming soon and not yet live against the
-production API.*
-
 *`propertyQuery` (`07_Property_Query.ipynb`) is deprecated and will be removed on November 20,
 2026. Migrate to `propertyInput` on `substanceQuery` (`04_Substance_Query.ipynb`).*
 
