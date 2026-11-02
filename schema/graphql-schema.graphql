@@ -3623,7 +3623,6 @@ type Role {
 
 # ==============================================================================
 # Boolean search — explicit AND / OR / NOT clauses
-# Source: nonprod/*.graphqls upstream. Not yet enabled in production.
 # ==============================================================================
 
 # Top-level expression.
